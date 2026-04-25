@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: newapi
+  labels:
+    app: newapi
+    region: "${REGION}"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: newapi
+  template:
+    metadata:
+      labels:
+        app: newapi
+        region: "${REGION}"
+    spec:
+      # 🔒 强制调度到同地域算力池，避免跨区调度导致数据出境
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: region
+                operator: In
+                values: ["${REGION}"]
+              - key: pool
+                operator: In
+                values: ["compute"]
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: ["newapi"]
+              topologyKey: kubernetes.io/hostname
+      
+      containers:
+      - name: newapi
+        image: newapi/new-api:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: newapi-region-config
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}  # 无状态设计，重启清空临时文件
