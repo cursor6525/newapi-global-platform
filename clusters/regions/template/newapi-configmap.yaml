@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: newapi-region-config
+  labels:
+    app: newapi
+    region: "${REGION}"
+
+  # === 地域标识 ===
+  REGION: "${REGION}"
+  
+  # === 本地数据源（关键：100% 本地，不跨国） ===
+  DB_HOST: "${REGION_BASE_IP}.10"
+  DB_PORT: "3306"
+  DB_NAME: "newapi_${REGION}"
+  REDIS_HOST: "${REGION_BASE_IP}.20"
+  REDIS_PORT: "6379"
+  
+  # === 业务与安全策略 ===
+  LOG_LEVEL: "info"
+  METRICS_ENABLED: "true"
+  CROSS_REGION_REJECT: "true"  # 强制拦截跨区请求
+  SESSION_TIMEOUT: "3600"
+  
+  # === 全球配置同步（仅同步渠道/计费规则，不含用户数据） ===
+  GLOBAL_SYNC_ENABLED: "true"
+  GLOBAL_SYNC_ENDPOINT: "https://100.64.255.10:8443"
+  GLOBAL_SYNC_INTERVAL: "300"  # 5分钟同步一次
