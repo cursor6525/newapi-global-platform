@@ -1,1 +1,67 @@
+# ==========================================
+# 🚫 Git 忽略规则 - newapi-global-platform
+# 核心原则：防密钥泄露、忽略临时文件、保持仓库标准化
+# ==========================================
 
+# === 🔐 环境与密钥 (绝对禁止提交) ===
+.env
+.env.*.local
+.env.local
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+id_rsa*
+id_ecdsa*
+id_ed25519*
+authorized_keys
+known_hosts
+
+# === 🌐 Kubernetes 与 CLI 配置 ===
+kubeconfig
+kubeconfig.*
+.kube/
+kubectl-debug.log
+
+# === 🐳 Docker 与容器运行时 ===
+docker-compose.override.yml
+docker-compose.*.yml
+*.tar
+containerd/
+cri-o/
+
+# === 📜 日志与临时文件 ===
+*.log
+logs/
+tmp/
+temp/
+.cache/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.bash_history
+.zsh_history
+
+# === 💻 开发工具与 IDE ===
+.idea/
+.vscode/
+*.code-workspace
+.cursor/
+.claude/
+.history/
+
+# === 🏗️ 项目特定敏感目录/文件 ===
+secrets/*.dec.yaml
+secrets/*.unsealed.yaml
+configs/geoip/GeoLite2-Country.mmdb
+*.mmdb
+*.dat
+
+# === 📦 依赖与构建产物 (预留扩展) ===
+node_modules/
+venv/
+__pycache__/
+.terraform/
