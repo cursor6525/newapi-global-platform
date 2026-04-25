@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - newapi-configmap.yaml
+  - newapi-deployment.yaml
+  - newapi-hpa.yaml
+  - newapi-service.yaml
+
+namespace: default
+
+commonLabels:
+  app: newapi
+  managed-by: fluxcd
+  region: "${REGION}"
