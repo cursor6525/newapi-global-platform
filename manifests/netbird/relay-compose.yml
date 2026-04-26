@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  netbird-relay:
+    image: netbirdio/relay:latest
+    container_name: netbird-relay-${RELAY_ID:-1}
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    environment:
+      - NB_RELAY_HUB=${NETBIRD_MGMT_URL:-https://100.64.255.10:443}
+      - NB_RELAY_SETUP_KEY=${NETBIRD_SETUP_KEY}
+      - NB_RELAY_NAME=relay-${RELAY_ID:-1}-${REGION:-cn}
+      - NB_RELAY_PORT=3478
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "5349:5349/udp"
+    volumes:
+      - /var/lib/netbird-relay:/var/lib/netbird
+    healthcheck:
+      test: ["CMD", "netbird", "relay", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
