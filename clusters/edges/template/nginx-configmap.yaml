@@ -1,0 +1,25 @@
+# clusters/edges/template/nginx-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-nginx-config
+  labels: { app: edge-nginx, region: "${REGION}" }
+
+  geoip-routing.conf: |
+    map $geoip2_data_country_code $target_region {
+      default "us";
+      "CN" "cn"; "TW" "cn"; "HK" "cn";
+      "US" "us"; "CA" "us";
+      "GB" "eu"; "DE" "eu"; "FR" "eu";
+      "JP" "ap"; "SG" "ap"; "AU" "ap";
+    }
+    upstream region-cn { server 100.64.1.100:80; keepalive 32; }
+    upstream region-us { server 100.64.2.100:80; keepalive 32; }
+    upstream region-eu { server 100.64.3.100:80; keepalive 32; }
+    server {
+      listen 80; listen 443 ssl http2;
+      location / {
+        proxy_set_header X-User-Region $geoip2_data_country_code;
+        proxy_pass http://region-$target_region;
+      }
+    }
