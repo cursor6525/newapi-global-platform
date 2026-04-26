@@ -1,0 +1,24 @@
+# clusters/global/infrastructure/network-policies.yaml
+# 🔒 核心：在 K8s 层强制拦截跨区业务流量（配合 NetBird ACL 双保险）
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-cross-region-business
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          region: "${REGION}"  # 仅允许同 region Pod 互访
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          region: "${REGION}"
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system  # 允许 DNS 解析
