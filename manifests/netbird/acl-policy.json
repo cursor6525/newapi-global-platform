@@ -1,0 +1,8 @@
+{
+  "groups": {
+    "group:cn-nodes": ["tag:region-cn"],
+    "group:us-nodes": ["tag:region-us"],
+    "group:eu-nodes": ["tag:region-eu"],
+    "group:ap-nodes": ["tag:region-ap"],
+    "group:mgmt-nodes": ["tag:pool-mgmt"],
+    "group:all-compute": ["tag:
