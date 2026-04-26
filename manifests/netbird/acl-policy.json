@@ -5,4 +5,85 @@
     "group:eu-nodes": ["tag:region-eu"],
     "group:ap-nodes": ["tag:region-ap"],
     "group:mgmt-nodes": ["tag:pool-mgmt"],
-    "group:all-compute": ["tag:
+    "group:all-compute": ["tag:pool-compute"],
+    "group:all-data": ["tag:pool-data"]
+  },
+  "policies": [
+    {
+      "name": "allow-intra-region-all",
+      "description": "✅ 允许同地域节点全互通（业务流量）",
+      "sources": ["group:cn-nodes", "group:us-nodes", "group:eu-nodes", "group:ap-nodes"],
+      "destinations": ["group:cn-nodes", "group:us-nodes", "group:eu-nodes", "group:ap-nodes"],
+      "ports": ["*"],
+      "action": "accept",
+      "bidirectional": true
+    },
+    {
+      "name": "allow-mgmt-to-all",
+      "description": "✅ 管理节点可访问所有区域（仅监控/配置端口）",
+      "sources": ["group:mgmt-nodes"],
+      "destinations": ["group:all-compute", "group:all-data"],
+      "ports": ["9100", "8428", "3000", "8443"],
+      "action": "accept",
+      "encryption": "required",
+      "log": true
+    },
+    {
+      "name": "allow-cross-region-metadata",
+      "description": "⚠️  仅允许元数据同步通道（加密 + 审计）",
+      "sources": ["group:mgmt-nodes"],
+      "destinations": ["group:all-data"],
+      "ports": ["3306"],
+      "action": "accept",
+      "encryption": "required",
+      "log": true
+    },
+    {
+      "name": "deny-cross-region-business",
+      "description": "🚫 禁止业务数据跨国传输（核心合规）",
+      "sources": ["group:cn-nodes"],
+      "destinations": ["group:us-nodes", "group:eu-nodes", "group:ap-nodes"],
+      "ports": ["3306", "6379", "8080", "3000"],
+      "action": "deny",
+      "log": true
+    },
+    {
+      "name": "deny-cross-region-business-us",
+      "sources": ["group:us-nodes"],
+      "destinations": ["group:cn-nodes", "group:eu-nodes", "group:ap-nodes"],
+      "ports": ["3306", "6379", "8080", "3000"],
+      "action": "deny",
+      "log": true
+    },
+    {
+      "name": "deny-cross-region-business-eu",
+      "sources": ["group:eu-nodes"],
+      "destinations": ["group:cn-nodes", "group:us-nodes", "group:ap-nodes"],
+      "ports": ["3306", "6379", "8080", "3000"],
+      "action": "deny",
+      "log": true
+    },
+    {
+      "name": "deny-home-to-data",
+      "description": "🚫 禁止家宽节点访问任何区域的数据池",
+      "sources": ["tag:region-home"],
+      "destinations": ["group:all-data"],
+      "action": "deny",
+      "log": true
+    },
+    {
+      "name": "default-deny",
+      "description": "默认拒绝所有未明确允许的流量",
+      "sources": ["*"],
+      "destinations": ["*"],
+      "action": "deny",
+      "log": true
+    }
+  ],
+  "settings": {
+    "dns": {
+      "enabled": true,
+      "domain": "netbird.local"
+    }
+  }
+}
