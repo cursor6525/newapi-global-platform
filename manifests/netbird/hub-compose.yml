@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  netbird-hub:
+    image: netbirdio/hub:latest
+    container_name: netbird-hub
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    environment:
+      - NB_DOMAIN=netbird.global
+      - NB_LETSENCRYPT_EMAIL=admin@newapi.global
+      - NB_MANAGEMENT_HTTP_PORT=80
+      - NB_MANAGEMENT_GRPC_PORT=443
+      - NB_SIGNAL_PROTOCOL=http
+      - NB_SIGNAL_URI=http://localhost:10000
+    volumes:
+      - /var/lib/netbird:/var/lib/netbird
+      - /etc/letsencrypt:/etc/letsencrypt
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3307:3307"
+      - "10000:10000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
