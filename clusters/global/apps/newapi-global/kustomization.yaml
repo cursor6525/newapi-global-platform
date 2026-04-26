@@ -1,0 +1,8 @@
+# clusters/global/apps/newapi-global/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+namespace: global
+commonLabels: { app: newapi-global, tier: mgmt }
