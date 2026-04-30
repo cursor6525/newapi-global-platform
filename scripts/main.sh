@@ -1,6 +1,6 @@
 cat > /opt/newapi-global-platform/scripts/main_fixed.sh << 'MAINEOF'
 #!/usr/bin/env bash
-# NewAPI 总控台（修复版 - 兼容所有终端）
+# NewAPI 总控台（完全修复版 - 解决所有输入问题）
 set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,7 +25,7 @@ ok()     { echo "[OK] $*"; }
 warn()   { echo "[WARN] $*"; }
 err()    { echo "[ERROR] $*"; }
 info()   { echo "[INFO] $*"; }
-pause()  { echo ""; echo -n "按回车键继续... "; read _; }
+pause()  { echo ""; printf "按回车键继续... "; read -r _; }
 
 get_sys_info() {
     CPU_COUNT=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo "未知")
@@ -69,6 +69,12 @@ get_node_status() {
     fi
 }
 
+# 修复的输入函数 - 使用 -e 启用 readline
+read_input() {
+    local var_name="$1"
+    read -e -r "$var_name" || true
+}
+
 show_main_menu() {
     while true; do
         clear
@@ -89,8 +95,8 @@ show_main_menu() {
         echo "============================================================"
         echo "本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | ${OS_INFO} | ${NOW_TIME}"
         echo "============================================================"
-        echo -n "请输入选项序号: "
-        read MAIN_OPT
+        printf "请输入选项序号: "
+        read -e -r MAIN_OPT || true
         
         case "$MAIN_OPT" in
             1) show_plan_menu ;;
@@ -127,8 +133,8 @@ show_plan_menu() {
         echo ""
         echo " [9] 返回主菜单"
         echo "============================================================"
-        echo -n "请选择部署方案: "
-        read PLAN_OPT
+        printf "请选择部署方案: "
+        read -e -r PLAN_OPT || true
         
         case "$PLAN_OPT" in
             1) show_plan_minimal ;;
@@ -154,8 +160,8 @@ show_plan_minimal() {
         echo ""
         echo " [9] 返回上一级"
         echo "============================================================"
-        echo -n "请选择节点: "
-        read NODE_OPT
+        printf "请选择节点: "
+        read -e -r NODE_OPT || true
         
         case "$NODE_OPT" in
             1) show_node_a_menu ;;
@@ -204,8 +210,8 @@ show_node_a_menu() {
         echo " [8] 一键巡检本节点健康状态"
         echo " [9] 返回节点选择"
         echo "=========================================================="
-        echo -n "请输入要安装的应用序号: "
-        read APP_OPT
+        printf "请输入要安装的应用序号: "
+        read -e -r APP_OPT || true
         
         case "$APP_OPT" in
             1) install_app "k3s-server" "节点 A" ;;
@@ -259,8 +265,8 @@ show_node_b_menu() {
         echo " [8] 一键巡检本节点健康状态"
         echo " [9] 返回节点选择"
         echo "=========================================================="
-        echo -n "请输入要安装的应用序号: "
-        read APP_OPT
+        printf "请输入要安装的应用序号: "
+        read -e -r APP_OPT || true
         
         case "$APP_OPT" in
             1) install_app "mysql-ha" "节点 B" ;;
@@ -292,8 +298,8 @@ install_app() {
     echo "   4) 启动服务并验证健康状态"
     echo "   5) 写入节点资产清单"
     echo ""
-    echo -n "是否继续？[y/N]: "
-    read CONFIRM
+    printf "是否继续？[y/N]: "
+    read -e -r CONFIRM || true
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
         log "开始安装 ${app} (${node})"
         warn "安装脚本暂未实现，仅做演示"
@@ -332,3 +338,4 @@ main "$@"
 MAINEOF
 
 chmod +x /opt/newapi-global-platform/scripts/main_fixed.sh
+echo "✅ 修复完成！"
