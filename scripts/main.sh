@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# NewAPI 全球化平台 · 中文交互式总控台（无颜色兼容版）
+# NewAPI 全球化平台 · 中文交互式总控台
 # 版本: v1.0.0
 # 作者: NewAPI Global Platform Team
 # 说明: 空白服务器一键部署 / 多节点统一调度 / 全中文运维界面
@@ -15,7 +15,7 @@ INVENTORY_DIR="${ROOT_DIR}/inventory/nodes"
 LOG_DIR="${ROOT_DIR}/logs"
 mkdir -p "${INVENTORY_DIR}" "${LOG_DIR}"
 
-# ---------- 颜色变量（全部禁用，兼容所有终端）----------
+# ---------- 颜色变量（全部禁用）----------
 RED=''
 GREEN=''
 YELLOW=''
@@ -32,7 +32,7 @@ ok()     { echo "[OK] $*"; }
 warn()   { echo "[WARN] $*"; }
 err()    { echo "[ERROR] $*"; }
 info()   { echo "[INFO] $*"; }
-pause()  { echo ""; read -rp "按回车键继续... " _; }
+pause()  { echo ""; echo -n "按回车键继续... "; read _; }
 
 # ---------- 系统信息采集 ----------
 get_sys_info() {
@@ -58,7 +58,7 @@ check_app_status() {
         redis)      systemctl is-active --quiet redis 2>/dev/null || systemctl is-active --quiet redis-server 2>/dev/null && echo "[OK] 已安装｜运行中" || echo "[ ] 未安装" ;;
         monitoring) kubectl get pod -n monitoring 2>/dev/null | grep -q Running && echo "[OK] 已部署｜健康" || echo "[ ] 未安装" ;;
         backup)     systemctl is-active --quiet backup-cron 2>/dev/null && echo "[OK] 已安装｜运行中" || echo "[ ] 未安装" ;;
-        *)          echo "[?] 未知" ;;
+        *)          echo "[ ] 未知" ;;
     esac
 }
 
@@ -94,7 +94,8 @@ show_main_menu() {
 ============================================================
 本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | ${OS_INFO} | ${NOW_TIME}
 EOF
-        read -rp "请输入选项序号: " MAIN_OPT
+        echo -n "请输入选项序号: "
+        read MAIN_OPT
         case "$MAIN_OPT" in
             1) show_plan_menu ;;
             2) run_health_check ;;
@@ -133,7 +134,8 @@ show_plan_menu() {
  [9] 返回主菜单
 ============================================================
 EOF
-        read -rp "请选择部署方案: " PLAN_OPT
+        echo -n "请选择部署方案: "
+        read PLAN_OPT
         case "$PLAN_OPT" in
             1) show_plan_minimal ;;
             2) show_plan_regional ;;
@@ -165,7 +167,8 @@ show_plan_minimal() {
   节点 B = 数据库 + 缓存 + 备份（纯数据，禁业务）
 ============================================================
 EOF
-        read -rp "请选择节点: " NODE_OPT
+        echo -n "请选择节点: "
+        read NODE_OPT
         case "$NODE_OPT" in
             1) show_node_a_menu ;;
             2) show_node_b_menu ;;
@@ -227,7 +230,8 @@ show_node_a_menu() {
  [9] 返回节点选择
 ==========================================================
 EOF
-        read -rp "请输入要安装的应用序号: " APP_OPT
+        echo -n "请输入要安装的应用序号: "
+        read APP_OPT
         case "$APP_OPT" in
             1) install_app "k3s-server"        "节点 A" ;;
             2) install_app "netbird-server"    "节点 A" ;;
@@ -236,7 +240,7 @@ EOF
             5) install_app "monitoring-stack"  "节点 A" ;;
             6) install_app "model-inference"   "节点 A" ;;
             7) list_installed_apps "node-a" ;;
-            8) bash "${SCRIPT_DIR}/05-health-check.sh" --node=a 2>/dev/null || info "健康检查脚本暂未实现" ;;
+            8) bash "${SCRIPT_DIR}/05-health-check.sh" --node=a ;;
             9) return ;;
             *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
@@ -284,7 +288,8 @@ show_node_b_menu() {
  [9] 返回节点选择
 ==========================================================
 EOF
-        read -rp "请输入要安装的应用序号: " APP_OPT
+        echo -n "请输入要安装的应用序号: "
+        read APP_OPT
         case "$APP_OPT" in
             1) install_app "mysql-ha"        "节点 B" ;;
             2) install_app "redis-sentinel"  "节点 B" ;;
@@ -293,7 +298,7 @@ EOF
             5) install_app "proxysql"        "节点 B" ;;
             6) install_app "etcd-backup"     "节点 B" ;;
             7) list_installed_apps "node-b" ;;
-            8) bash "${SCRIPT_DIR}/05-health-check.sh" --node=b 2>/dev/null || info "健康检查脚本暂未实现" ;;
+            8) bash "${SCRIPT_DIR}/05-health-check.sh" --node=b ;;
             9) return ;;
             *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
@@ -318,7 +323,8 @@ EOF
     echo "   4) 启动服务并验证健康状态"
     echo "   5) 写入节点资产清单"
     echo ""
-    read -rp "是否继续？[y/N]: " CONFIRM
+    echo -n "是否继续？[y/N]: "
+    read CONFIRM
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
         log "开始安装 ${app} (${node})"
         if [[ -x "${SCRIPT_DIR}/installers/install-${app}.sh" ]]; then
@@ -357,14 +363,15 @@ show_plan_regional() {
 提示：每个区域至少需 1 台总控 + 1 台数据节点
 ============================================================
 EOF
-        read -rp "请选择区域: " REGION_OPT
+        echo -n "请选择区域: "
+        read REGION_OPT
         case "$REGION_OPT" in
             1) deploy_region "cn-north" ;;
             2) deploy_region "ap-southeast" ;;
             3) deploy_region "us-east" ;;
             4) deploy_region "eu-central" ;;
-            5) bash "${SCRIPT_DIR}/08-add-node.sh" 2>/dev/null || info "新增区域脚本暂未实现" ;;
-            6) bash "${SCRIPT_DIR}/10-remove-node.sh" 2>/dev/null || info "退服区域脚本暂未实现" ;;
+            5) bash "${SCRIPT_DIR}/08-add-node.sh" ;;
+            6) bash "${SCRIPT_DIR}/10-remove-node.sh" ;;
             9) return ;;
             *) err "无效选项"; sleep 1 ;;
         esac
@@ -376,7 +383,7 @@ deploy_region() {
     clear
     show_header
     info "即将部署区域：${region}"
-    bash "${SCRIPT_DIR}/deploy-region.sh" --region="${region}" 2>/dev/null || warn "区域部署脚本暂未实现"
+    bash "${SCRIPT_DIR}/deploy-region.sh" --region="${region}"
     pause
 }
 
@@ -409,10 +416,11 @@ show_plan_enterprise() {
  [9] 返回上一级
 ============================================================
 EOF
-    read -rp "请选择: " ENT_OPT
+    echo -n "请选择: "
+    read ENT_OPT
     case "$ENT_OPT" in
         1) less "${ROOT_DIR}/docs/ARCHITECTURE.md" 2>/dev/null || warn "文档暂未生成"; pause ;;
-        2) bash "${SCRIPT_DIR}/07-bootstrap-flux.sh" --enterprise 2>/dev/null || info "企业部署脚本暂未实现"; pause ;;
+        2) bash "${SCRIPT_DIR}/07-bootstrap-flux.sh" --enterprise ;;
         3) bash "${ROOT_DIR}/tests/compliance/run-checklist.sh" 2>/dev/null || warn "合规脚本暂未实现"; pause ;;
         9) return ;;
     esac
@@ -464,11 +472,12 @@ show_secrets_menu() {
  [9] 返回主菜单
 ============================================================
 EOF
-    read -rp "请选择: " SEC_OPT
+    echo -n "请选择: "
+    read SEC_OPT
     case "$SEC_OPT" in
-        1) bash "${SCRIPT_DIR}/06-rotate-secrets.sh" 2>/dev/null || info "密钥轮转脚本暂未实现" ;;
-        2) bash "${SCRIPT_DIR}/09-auto-ssl.sh" 2>/dev/null || info "SSL 证书脚本暂未实现" ;;
-        3) bash "${ROOT_DIR}/secrets/init-sealed-keys.sh" 2>/dev/null || info "密钥注入脚本暂未实现" ;;
+        1) bash "${SCRIPT_DIR}/06-rotate-secrets.sh" ;;
+        2) bash "${SCRIPT_DIR}/09-auto-ssl.sh" ;;
+        3) bash "${ROOT_DIR}/secrets/init-sealed-keys.sh" ;;
         4) warn "功能开发中..."; pause ;;
         9) return ;;
     esac
@@ -516,7 +525,8 @@ show_monitoring_menu() {
  [9] 返回主菜单
 ============================================================
 EOF
-    read -rp "请选择: " MON_OPT
+    echo -n "请选择: "
+    read MON_OPT
     case "$MON_OPT" in
         1) info "请访问 https://grafana.your-domain.com"; pause ;;
         2) info "请访问 https://vm.your-domain.com"; pause ;;
@@ -544,7 +554,8 @@ show_incident_menu() {
  [9] 返回主菜单
 ============================================================
 EOF
-    read -rp "请选择: " INC_OPT
+    echo -n "请选择: "
+    read INC_OPT
     case "$INC_OPT" in
         1|2|3|4|5)
             warn "应急流程脚本需配合 INCIDENT_RESPONSE.md 执行"
@@ -570,7 +581,8 @@ show_docs_menu() {
  [9] 返回主菜单
 ============================================================
 EOF
-    read -rp "请选择: " DOC_OPT
+    echo -n "请选择: "
+    read DOC_OPT
     case "$DOC_OPT" in
         1) less "${ROOT_DIR}/docs/ARCHITECTURE.md" 2>/dev/null || warn "文档暂未生成"; pause ;;
         2) less "${ROOT_DIR}/docs/TROUBLESHOOTING.md" 2>/dev/null || warn "文档暂未生成"; pause ;;
