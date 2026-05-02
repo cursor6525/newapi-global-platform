@@ -31,7 +31,7 @@ else
     CYAN=''; WHITE=''; GRAY=''; BOLD=''; NC=''
 fi
 
-# ---------- 通用工具函数（已按图片修正） ----------
+# ---------- 通用工具函数 ----------
 log()   { echo -e "${GRAY}[$(date '+%H:%M:%S')]${NC} $*" | tee -a "${LOG_DIR}/main.log" >/dev/null; }
 ok()    { echo -e "${GREEN}✅ $*${NC}"; }
 warn()  { echo -e "${YELLOW}⚠️  $*${NC}"; }
@@ -59,12 +59,12 @@ get_sys_info() {
     get_netbird_ip
 }
 
-# ---------- 获取 NetBird 组网 IP（按图片新增函数） ----------
+# ---------- 获取 NetBird 组网 IP ----------
 get_netbird_ip() {
     NETBIRD_IP=$(ip a 2>/dev/null | grep -A1 wt0 | grep inet | awk '{print $2}' | cut -d/ -f1 2>/dev/null || echo "未接入 NetBird")
 }
 
-# ---------- 节点部署状态读取（按图片新增） ----------
+# ---------- 节点部署状态读取 ----------
 get_node_status() {
     local node="$1"
     if [[ -f "${INVENTORY_DIR}/${node}.state" ]]; then
@@ -74,7 +74,7 @@ get_node_status() {
     fi
 }
 
-# ---------- 从全局大脑读取应用状态（按图片新增） ----------
+# ---------- 从全局大脑读取应用状态（核心数据源） ----------
 query_app_state() {
     local node="$1"
     local app="$2"
@@ -85,7 +85,7 @@ query_app_state() {
     fi
 }
 
-# ---------- 全局服务部署总览看板（按图片新增） ----------
+# ---------- 全局服务部署总览看板 ----------
 show_global_service_table() {
     echo ""
     echo -e "${WHITE}【📊 全局服务部署总览 | NEWAPI 全局大脑数据看板】${NC}"
@@ -145,43 +145,7 @@ show_global_service_table() {
     echo -e "${GRAY}说明：绿色✅部署成功｜灰色未部署｜数据源：NEWAPI全局大脑文件夹${NC}"
 }
 
-# ---------- 单节点本机软件清单（按图片新增） ----------
-show_local_app_list() {
-    local node="$1"
-    echo ""
-    echo -e "${WHITE}【📋 本节点软件安装清单】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    echo -e " K3s 集群控制面      : $(query_app_state ${node} k3s)"
-    echo -e " NetBird 零信任组网  : $(query_app_state ${node} netbird)"
-    echo -e " Nginx 边缘网关      : $(query_app_state ${node} nginx)"
-    echo -e " NewAPI 业务网关     : $(query_app_state ${node} newapi)"
-    echo -e " MySQL 数据库        : $(query_app_state ${node} mysql)"
-    echo -e " Redis 缓存哨兵      : $(query_app_state ${node} redis)"
-    echo -e " 监控运维套件        : $(query_app_state ${node} monitoring)"
-    echo -e "${BLUE}============================================================${NC}"
-}
-
-# ---------- 应用状态检测（兼容旧逻辑） ----------
-check_app_status() {
-    local app="$1"
-    local active=false
-    case "$app" in
-        k3s)        systemctl is-active --quiet k3s 2>/dev/null && active=true ;;
-        netbird)    systemctl is-active --quiet netbird 2>/dev/null && active=true ;;
-        nginx)      systemctl is-active --quiet nginx 2>/dev/null && active=true ;;
-        mysql)      (systemctl is-active --quiet mysql 2>/dev/null || systemctl is-active --quiet mysqld 2>/dev/null) && active=true ;;
-        redis)      (systemctl is-active --quiet redis 2>/dev/null || systemctl is-active --quiet redis-server 2>/dev/null) && active=true ;;
-        newapi)     kubectl get pod -n newapi 2>/dev/null | grep -q Running && active=true ;;
-        monitoring) kubectl get pod -n monitoring 2>/dev/null | grep -q Running && active=true ;;
-    esac
-    if $active; then
-        echo -e "${GREEN}✅ 已安装｜运行中${NC}"
-    else
-        echo -e "${GRAY}未安装${NC}"
-    fi
-}
-
-# ---------- 头部横幅（按图片修正格式） ----------
+# ---------- 头部横幅 ----------
 show_header() {
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
@@ -289,18 +253,18 @@ show_plan_minimal() {
     done
 }
 
-# ---------- 节点 A 界面（已添加 NetBird IP） ----------
+# ---------- 节点 A 界面 ----------
 show_node_a_menu() {
     while true; do
         safe_clear
         show_header
         get_sys_info
         local k3s_s netbird_s nginx_s newapi_s mon_s
-        k3s_s=$(check_app_status k3s)
-        netbird_s=$(check_app_status netbird)
-        nginx_s=$(check_app_status nginx)
-        newapi_s=$(check_app_status newapi)
-        mon_s=$(check_app_status monitoring)
+        k3s_s=$(query_app_state node-a k3s)
+        netbird_s=$(query_app_state node-a netbird)
+        nginx_s=$(query_app_state node-a nginx)
+        newapi_s=$(query_app_state node-a newapi)
+        mon_s=$(query_app_state node-a monitoring)
 
         echo ""
         echo -e "${BLUE}============================================================${NC}"
@@ -316,7 +280,6 @@ show_node_a_menu() {
         echo -e "${YELLOW}⚠️  角色定义：总控 + 控制面 + 业务网关 + 边缘入口${NC}"
         echo -e "${RED}❗ 严禁在本节点安装数据库 / Redis 等数据组件${NC}"
         echo -e "${BLUE}============================================================${NC}"
-        show_local_app_list node-a
         echo ""
         echo -e "${WHITE}✅ 可安装应用清单（仅节点 A 允许）：${NC}"
         echo ""
@@ -325,7 +288,7 @@ show_node_a_menu() {
         echo -e " ${GREEN}3)${NC} Nginx 边缘网关（公网入口）     → ${nginx_s}"
         echo -e " ${GREEN}4)${NC} NewAPI 网关服务（核心业务）   → ${newapi_s}"
         echo -e " ${GREEN}5)${NC} 监控系统（VM + Loki + 告警）   → ${mon_s}"
-        echo -e " ${GREEN}6)${NC} 模型推理服务（可选）           → ${GRAY}未安装${NC}"
+        echo -e " ${GREEN}6)${NC} 模型推理服务（可选）           → ${GRAY}未部署${NC}"
         echo -e " ${GREEN}7)${NC} 📋 查看本节点已安装应用清单"
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
@@ -346,16 +309,16 @@ show_node_a_menu() {
     done
 }
 
-# ---------- 节点 B 界面（已添加 NetBird IP） ----------
+# ---------- 节点 B 界面 ----------
 show_node_b_menu() {
     while true; do
         safe_clear
         show_header
         get_sys_info
         local mysql_s redis_s netbird_s
-        mysql_s=$(check_app_status mysql)
-        redis_s=$(check_app_status redis)
-        netbird_s=$(check_app_status netbird)
+        mysql_s=$(query_app_state node-b mysql)
+        redis_s=$(query_app_state node-b redis)
+        netbird_s=$(query_app_state node-b netbird)
 
         echo ""
         echo -e "${BLUE}============================================================${NC}"
@@ -372,16 +335,15 @@ show_node_b_menu() {
         echo -e "${RED}❗ 禁止安装业务服务 / K3s 控制面 / Nginx 网关${NC}"
         echo -e "${RED}❗ 此节点仅承载数据库、缓存、备份等数据组件${NC}"
         echo -e "${BLUE}============================================================${NC}"
-        show_local_app_list node-b
         echo ""
         echo -e "${WHITE}✅ 可安装应用清单（仅数据节点允许）：${NC}"
         echo ""
         echo -e " ${GREEN}1)${NC} MySQL 数据库（主从 + 半同步）     → ${mysql_s}"
         echo -e " ${GREEN}2)${NC} Redis 缓存（哨兵模式）             → ${redis_s}"
-        echo -e " ${GREEN}3)${NC} 自动备份服务（异地 + 加密）       → ${GRAY}未安装${NC}"
+        echo -e " ${GREEN}3)${NC} 自动备份服务（异地 + 加密）       → ${GRAY}未部署${NC}"
         echo -e " ${GREEN}4)${NC} NetBird 客户端（加入加密网格）   → ${netbird_s}"
-        echo -e " ${GREEN}5)${NC} ProxySQL 读写分离（可选）         → ${GRAY}未安装${NC}"
-        echo -e " ${GREEN}6)${NC} etcd 备份代理（可选）             → ${GRAY}未安装${NC}"
+        echo -e " ${GREEN}5)${NC} ProxySQL 读写分离（可选）         → ${GRAY}未部署${NC}"
+        echo -e " ${GREEN}6)${NC} etcd 备份代理（可选）             → ${GRAY}未部署${NC}"
         echo -e " ${GREEN}7)${NC} 📋 查看本节点已安装应用清单"
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
