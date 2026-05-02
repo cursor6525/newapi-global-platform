@@ -1,0 +1,14 @@
+{
+  "cluster_name": "newapi-global-cluster",
+  "created_at": "2026-05-02",
+  "node_list": ["node-a","node-b","node-c","node-d","node-e","node-f","node-g"],
+  "node_role": {
+    "node-a": "管控/控制面",
+    "node-b": "业务网关",
+    "node-c": "数据存储",
+    "node-d": "海外业务",
+    "node-e": "海外数据",
+    "node-f": "全局灾备",
+    "node-g": "全局调度"
+  }
+}
