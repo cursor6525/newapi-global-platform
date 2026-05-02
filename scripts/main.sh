@@ -147,49 +147,50 @@ show_global_service_table() {
 
 # ---------- 头部横幅 ----------
 show_header() {
-    echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}     ${GRAY}部署｜运维｜监控｜扩容｜全局服务资产总览${NC}                ${BLUE}║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}     ${GRAY}部署｜运维｜监控｜扩容｜集群化资产清单${NC}              ${BLUE}║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 }
 
-# ---------- 主菜单 ----------
+# ============================================================
+# 主菜单入口（已按你要求完全替换）
+# ============================================================
 show_main_menu() {
-    while true; do
-        safe_clear
-        show_header
-        get_sys_info
-        echo ""
-        show_global_service_table
-        echo ""
-        echo -e "${WHITE}【主菜单 · 请选择运维场景】${NC}"
-        echo -e "${BLUE}============================================================${NC}"
-        echo -e " ${GREEN}1)${NC} 🚀 部署架构选型      ${GRAY}（最小生产 / 多区域 / 企业级）${NC}"
-        echo -e " ${GREEN}2)${NC} 🩺 全域健康巡检      ${GRAY}（节点状态 / 服务连通性）${NC}"
-        echo -e " ${GREEN}3)${NC} 🔄 配置同步 GitOps   ${GRAY}（Flux 拉取 / 热更新）${NC}"
-        echo -e " ${GREEN}4)${NC} 🔑 密钥与证书管理    ${GRAY}（轮转 / 续期 / 销毁）${NC}"
-        echo -e " ${GREEN}5)${NC} 📦 节点资产清单      ${GRAY}（查看 / 注册 / 退服）${NC}"
-        echo -e " ${GREEN}6)${NC} 📊 监控与告警        ${GRAY}（Grafana / 告警路由）${NC}"
-        echo -e " ${GREEN}7)${NC} 🛡️  应急响应工具箱    ${GRAY}（断网 / 降级 / 灾备）${NC}"
-        echo -e " ${GREEN}8)${NC} 📖 查看文档与帮助    ${GRAY}（架构 / 故障排查 / 术语）${NC}"
-        echo -e " ${RED}0)${NC} 🚪 退出总控台"
-        echo -e "${BLUE}============================================================${NC}"
-        echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
-        echo ""
-        read -rp "$(echo -e ${CYAN}请输入选项序号：${NC} )" MAIN_OPT
-        case "$MAIN_OPT" in
-            1) show_plan_menu ;;
-            2) run_health_check ;;
-            3) run_sync_configs ;;
-            4) show_secrets_menu ;;
-            5) show_inventory_menu ;;
-            6) show_monitoring_menu ;;
-            7) show_incident_menu ;;
-            8) show_docs_menu ;;
-            0) echo -e "${GREEN}👋 已退出总控台，再见！${NC}"; exit 0 ;;
-            *) err "无效选项，请重新输入"; sleep 1 ;;
-        esac
-    done
+while true; do
+safe_clear
+show_header
+get_sys_info
+echo ""
+show_global_service_table
+echo ""
+echo -e "${WHITE}【主菜单 · 全生命周期管理】${NC}"
+echo -e "${BLUE}============================================================${NC}"
+echo -e " ${GREEN}1)${NC} 🚀 架构部署与初始化    ${GRAY}单机 / 单区域基础块 / 全球化高可用${NC}"
+echo -e " ${GREEN}2)${NC} 📦 集群化资产清单      ${GRAY}节点｜角色｜区域｜服务状态总览${NC}"
+echo -e " ${GREEN}3)${NC} 🩺 全域监控与健康巡检  ${GRAY}节点连通性｜指标｜日志｜告警${NC}"
+echo -e " ${GREEN}4)${NC} 🔧 日常运维工具箱      ${GRAY}安装｜启停｜配置｜备份｜恢复${NC}"
+echo -e " ${GREEN}5)${NC} ⬆️  集群弹性扩容管理    ${GRAY}单机升单区｜单区升全球｜新增节点${NC}"
+echo -e " ${GREEN}6)${NC} 🛡️  应急灾备与故障切换  ${GRAY}断网切换｜主从切换｜快照恢复${NC}"
+echo -e " ${GREEN}7)${NC} 📖 架构文档与帮助手册  ${GRAY}部署规范｜角色说明｜排错指南${NC}"
+echo -e " ${RED}0)${NC} 🚪 退出总控台"
+echo -e "${BLUE}============================================================${NC}"
+echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
+echo ""
+read -rp "$(echo -e ${CYAN}请输入选项序号：${NC} )" MAIN_OPT
+
+case "$MAIN_OPT" in
+    1) show_plan_menu ;;          # 架构部署与初始化
+    2) show_inventory_menu ;;     # 集群化资产清单
+    3) run_health_check ;;        # 全域监控与健康巡检
+    4) warn "日常运维工具箱开发中..."; sleep 1 ;; # 日常运维
+    5) warn "集群弹性扩容开发中..."; sleep 1 ;; # 扩容管理
+    6) show_incident_menu ;;      # 应急灾备与故障切换
+    7) show_docs_menu ;;          # 架构文档与帮助手册
+    0) echo -e "${GREEN}👋 已退出总控台，再见！${NC}"; exit 0 ;;
+    *) err "无效选项，请重新输入"; sleep 1 ;;
+esac
+done
 }
 
 # ---------- 部署架构选型 ----------
@@ -199,7 +200,7 @@ show_plan_menu() {
         show_header
         show_global_service_table
         echo ""
-        echo -e "${WHITE}【🚀 部署架构选型】${NC}"
+        echo -e "${WHITE}【🚀 架构部署与初始化】${NC}"
         echo -e "${BLUE}============================================================${NC}"
         echo -e " ${GREEN}1)${NC} 🏠 ${YELLOW}最小生产架构 (2 台服务器)${NC}"
         echo -e "       ${GRAY}└─ 业务数据分离 ｜ 适合 MVP / 中小团队${NC}"
@@ -478,7 +479,7 @@ show_inventory_menu() {
     safe_clear
     show_header
     echo ""
-    echo -e "${WHITE}【📦 节点资产清单】${NC}"
+    echo -e "${WHITE}【📦 集群化资产清单】${NC}"
     echo -e "${BLUE}============================================================${NC}"
     if compgen -G "${INVENTORY_DIR}/*.state" > /dev/null; then
         printf "  ${CYAN}%-20s %-15s %-20s %s${NC}\n" "节点名" "IP 地址" "角色" "状态"
@@ -518,7 +519,7 @@ show_incident_menu() {
     safe_clear
     show_header
     echo ""
-    echo -e "${WHITE}【🛡️  应急响应工具箱】${NC}"
+    echo -e "${WHITE}【🛡️  应急灾备与故障切换】${NC}"
     echo -e "${BLUE}============================================================${NC}"
     echo -e "${RED}⚠️  以下操作具有高风险，请确认后再使用！${NC}"
     echo -e "${BLUE}------------------------------------------------------------${NC}"
@@ -526,7 +527,7 @@ show_incident_menu() {
     echo -e " ${GREEN}2)${NC} 💾 etcd 快照恢复"
     echo -e " ${GREEN}3)${NC} 🔥 数据库主从故障切换"
     echo -e " ${GREEN}4)${NC} 🚫 一键封禁可疑 IP"
-    echo -e "${RED}9)${NC} ⬅️  返回主菜单"
+    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
     echo -e "${BLUE}============================================================${NC}"
     read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
 }
@@ -536,13 +537,13 @@ show_docs_menu() {
     safe_clear
     show_header
     echo ""
-    echo -e "${WHITE}【📖 文档与帮助】${NC}"
+    echo -e "${WHITE}【📖 架构文档与帮助手册】${NC}"
     echo -e "${BLUE}============================================================${NC}"
     echo -e " ${GREEN}1)${NC} 🏗️  架构详解"
     echo -e " ${GREEN}2)${NC} 🔧 故障排查手册"
     echo -e " ${GREEN}3)${NC} 🤝 贡献指南"
     echo -e " ${GREEN}4)${NC} 📖 术语表"
-    echo -e "${RED}9)${NC} ⬅️  返回主菜单"
+    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
     echo -e "${BLUE}============================================================${NC}"
     read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
 }
