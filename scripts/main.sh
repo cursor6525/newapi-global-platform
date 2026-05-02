@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 # NewAPI 全球化平台 · 中文交互式总控台 (彩色版)
-# 版本: v1.2.0
+# 版本: v1.2.1 (修复版)
 # 特性: 自动检测终端颜色支持 / 防闪烁 / 兼容性强
 # ============================================================
 
@@ -37,7 +37,8 @@ ok()    { echo -e "${GREEN}✅ $*${NC}"; }
 warn()  { echo -e "${YELLOW}⚠️  $*${NC}"; }
 err()   { echo -e "${RED}❌ $*${NC}"; }
 info()  { echo -e "${CYAN}ℹ️  $*${NC}"; }
-pause() { echo ""; read -rp "$(echo -e ${GRAY}按回车键继续...${NC})" _; }
+# 修复：移除pause()中的echo -e，避免兼容性问题
+pause() { echo ""; read -p "$(printf "${GRAY}按回车键继续...${NC}")" _; }
 
 # ---------- 安全清屏 ----------
 safe_clear() {
@@ -178,7 +179,7 @@ echo -e " ${GREEN}2)${NC} 注册新节点到资产库"
 echo -e " ${GREEN}3)${NC} 下线退役无效节点"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择操作：${NC} )" I_OPT
+read -p "$(printf "${CYAN}请选择操作：${NC} ")" I_OPT
 case "$I_OPT" in
 1) info "已刷新集群资产清单"; pause ;;
 2) info "进入新节点注册流程"; pause ;;
@@ -207,7 +208,7 @@ echo -e " ${GREEN}5)${NC} 🚨 告警通道配置与测试"
 echo -e " ${GREEN}6)${NC} 节点网络连通性检测"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择：${NC} )" M_OPT
+read -p "$(printf "${CYAN}请选择：${NC} ")" M_OPT
 case "$M_OPT" in
 1) info "开始全集群健康巡检..."; pause ;;
 2) info "跳转Grafana地址..."; pause ;;
@@ -240,7 +241,7 @@ echo -e " ${GREEN}5)${NC} 📥 集群配置从备份恢复"
 echo -e " ${GREEN}6)${NC} 🔑 密钥与SSL证书管理"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择运维功能：${NC} )" O_OPT
+read -p "$(printf "${CYAN}请选择运维功能：${NC} ")" O_OPT
 case "$O_OPT" in
 1) info "进入服务管理列表..."; pause ;;
 2) info "进入服务启停控制..."; pause ;;
@@ -272,7 +273,7 @@ echo -e " ${GREEN}4)${NC} 横向新增数据存储节点"
 echo -e " ${GREEN}5)${NC} 新增海外跨区容灾节点"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择扩容方式：${NC} )" S_OPT
+read -p "$(printf "${CYAN}请选择扩容方式：${NC} ")" S_OPT
 case "$S_OPT" in
 1) info "单机平滑扩容为3节点单区域..."; pause ;;
 2) info "复用现有单区域，叠加全球节点..."; pause ;;
@@ -302,7 +303,7 @@ echo -e " ${GREEN}4)${NC} 📦 K3s集群快照备份与恢复"
 echo -e " ${GREEN}5)${NC} 🚫 恶意IP一键封禁防护"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择应急功能：${NC} )" D_OPT
+read -p "$(printf "${CYAN}请选择应急功能：${NC} ")" D_OPT
 case "$D_OPT" in
 1) info "触发跨区流量自动切换..."; pause ;;
 2) info "数据库主从手动/自动切换..."; pause ;;
@@ -316,7 +317,7 @@ done
 }
 
 # ============================================================
-# 7. 架构文档与帮助手册 子菜单
+# 7. 架构文档与帮助手册 子菜单（修复：添加9的case处理）
 # ============================================================
 show_docs_main() {
 while true; do
@@ -332,7 +333,16 @@ echo -e " ${GREEN}4)${NC} 部署与扩容标准流程"
 echo -e " ${GREEN}5)${NC} 专业术语名词解释"
 echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
 echo -e "${BLUE}============================================================${NC}"
-read -rp "$(echo -e ${CYAN}请选择文档：${NC} )" _
+read -p "$(printf "${CYAN}请选择文档：${NC} ")" DOC_OPT
+case "$DOC_OPT" in
+1) info "打开整体架构说明文档..."; pause ;;
+2) info "打开节点角色规范文档..."; pause ;;
+3) info "打开故障排查手册..."; pause ;;
+4) info "打开部署与扩容流程文档..."; pause ;;
+5) info "打开术语解释文档..."; pause ;;
+9) return ;;
+*) err "无效选项"; sleep 1 ;;
+esac
 done
 }
 
@@ -360,7 +370,7 @@ echo -e " ${RED}0)${NC} 🚪 退出总控台"
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
 echo ""
-read -rp "$(echo -e ${CYAN}请输入选项序号：${NC} )" MAIN_OPT
+read -p "$(printf "${CYAN}请输入选项序号：${NC} ")" MAIN_OPT
 
 case "$MAIN_OPT" in
     1) show_plan_menu ;;              # 架构部署与初始化
@@ -396,7 +406,7 @@ show_plan_menu() {
         echo ""
         echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
         echo -e "${BLUE}============================================================${NC}"
-        read -rp "$(echo -e ${CYAN}请选择部署方案：${NC} )" PLAN_OPT
+        read -p "$(printf "${CYAN}请选择部署方案：${NC} ")" PLAN_OPT
         case "$PLAN_OPT" in
             1) show_plan_minimal ;;
             2) show_plan_regional ;;
@@ -427,7 +437,7 @@ show_plan_minimal() {
         echo -e "${GRAY}  节点 A = 控制面 + 业务网关 + 边缘入口${NC}"
         echo -e "${GRAY}  节点 B = 数据库 + 缓存 + 备份（纯数据，禁业务）${NC}"
         echo -e "${BLUE}============================================================${NC}"
-        read -rp "$(echo -e ${CYAN}请选择节点：${NC} )" NODE_OPT
+        read -p "$(printf "${CYAN}请选择节点：${NC} ")" NODE_OPT
         case "$NODE_OPT" in
             1) show_node_a_menu ;;
             2) show_node_b_menu ;;
@@ -477,7 +487,7 @@ show_node_a_menu() {
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
         echo -e "${BLUE}============================================================${NC}"
-        read -rp "$(echo -e ${CYAN}请输入要安装的应用序号：${NC} )" APP_OPT
+        read -p "$(printf "${CYAN}请输入要安装的应用序号：${NC} ")" APP_OPT
         case "$APP_OPT" in
             1) install_app "k3s-server"        "节点 A" ;;
             2) install_app "netbird-server"    "节点 A" ;;
@@ -532,7 +542,7 @@ show_node_b_menu() {
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
         echo -e "${BLUE}============================================================${NC}"
-        read -rp "$(echo -e ${CYAN}请输入要安装的应用序号：${NC} )" APP_OPT
+        read -p "$(printf "${CYAN}请输入要安装的应用序号：${NC} ")" APP_OPT
         case "$APP_OPT" in
             1) install_app "mysql-ha"        "节点 B" ;;
             2) install_app "redis-sentinel"  "节点 B" ;;
@@ -564,7 +574,7 @@ install_app() {
     echo -e "  ${GREEN}4)${NC} 启动服务并验证健康状态"
     echo -e "  ${GREEN}5)${NC} 写入节点资产清单（.state 文件）"
     echo ""
-    read -rp "$(echo -e ${CYAN}是否继续？[y/N]：${NC} )" CONFIRM
+    read -p "$(printf "${CYAN}是否继续？[y/N]：${NC} ")" CONFIRM
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
         log "开始安装 ${app} (${node})"
         if [[ -x "${SCRIPT_DIR}/installers/install-${app}.sh" ]]; then
@@ -599,7 +609,7 @@ show_plan_regional() {
     echo -e " ${GREEN}4)${NC} 🇪🇺 欧洲区 (eu-central)"
     echo -e " ${RED}9)${NC} ⬅️  返回上一级"
     echo -e "${BLUE}============================================================${NC}"
-    read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
+    read -p "$(printf "${CYAN}请选择：${NC} ")" _
 }
 
 # ---------- 企业级 ----------
@@ -619,116 +629,6 @@ show_plan_enterprise() {
     echo -e "  🔹 混沌工程 + SLO/SLI 体系"
     echo -e "${BLUE}============================================================${NC}"
     pause
-}
-
-# ---------- 健康巡检 ----------
-run_health_check() {
-    safe_clear
-    show_header
-    info "正在执行全域健康巡检..."
-    echo ""
-    echo -e "  ${GREEN}✅${NC} 节点 A 控制面  - 健康"
-    echo -e "  ${GREEN}✅${NC} 节点 B 数据库  - 健康 (主从延迟 12ms)"
-    echo -e "  ${GREEN}✅${NC} NetBird 网格   - 全部对等节点在线"
-    echo -e "  ${YELLOW}⚠️${NC}  Nginx 边缘    - QPS 接近阈值 80%"
-    pause
-}
-
-# ---------- 配置同步 ----------
-run_sync_configs() {
-    safe_clear
-    show_header
-    info "GitOps 配置同步功能开发中..."
-    pause
-}
-
-# ---------- 密钥菜单 ----------
-show_secrets_menu() {
-    safe_clear
-    show_header
-    echo ""
-    echo -e "${WHITE}【🔑 密钥与证书管理】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    echo -e " ${GREEN}1)${NC} 🔄 轮转所有密钥"
-    echo -e " ${GREEN}2)${NC} 📜 自动签发 / 续期 SSL 证书"
-    echo -e " ${GREEN}3)${NC} 🗝️  导入 Age / SealedSecrets 私钥"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
-    echo -e "${BLUE}============================================================${NC}"
-    read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
-}
-
-# ---------- 资产清单 ----------
-show_inventory_menu() {
-    safe_clear
-    show_header
-    echo ""
-    echo -e "${WHITE}【📦 集群化资产清单】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    if compgen -G "${INVENTORY_DIR}/*.state" > /dev/null; then
-        printf "  ${CYAN}%-20s %-15s %-20s %s${NC}\n" "节点名" "IP 地址" "角色" "状态"
-        echo -e "  ${GRAY}----------------------------------------------------------------${NC}"
-        for f in "${INVENTORY_DIR}"/*.state; do
-            local name ip role status
-            name=$(basename "$f" .state)
-            ip=$(grep -E '^IP=' "$f" 2>/dev/null | cut -d= -f2)
-            role=$(grep -E '^ROLE=' "$f" 2>/dev/null | cut -d= -f2)
-            status=$(grep -E '^STATUS=' "$f" 2>/dev/null | cut -d= -f2)
-            printf "  %-20s %-15s %-20s %s\n" "$name" "${ip:-未知}" "${role:-未知}" "${status:-未知}"
-        done
-    else
-        warn "暂无节点注册"
-    fi
-    pause
-}
-
-# ---------- 监控菜单 ----------
-show_monitoring_menu() {
-    safe_clear
-    show_header
-    echo ""
-    echo -e "${WHITE}【📊 监控与告警】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    echo -e " ${GREEN}1)${NC} 🌐 打开 Grafana 控制台"
-    echo -e " ${GREEN}2)${NC} 📈 查看 VictoriaMetrics 指标"
-    echo -e " ${GREEN}3)${NC} 📝 查看 Loki 日志聚合"
-    echo -e " ${GREEN}4)${NC} 🚨 测试告警通道"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
-    echo -e "${BLUE}============================================================${NC}"
-    read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
-}
-
-# ---------- 应急菜单 ----------
-show_incident_menu() {
-    safe_clear
-    show_header
-    echo ""
-    echo -e "${WHITE}【🛡️  应急灾备与故障切换】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    echo -e "${RED}⚠️  以下操作具有高风险，请确认后再使用！${NC}"
-    echo -e "${BLUE}------------------------------------------------------------${NC}"
-    echo -e " ${GREEN}1)${NC} 🌐 跨国断网应急切换"
-    echo -e " ${GREEN}2)${NC} 💾 etcd 快照恢复"
-    echo -e " ${GREEN}3)${NC} 🔥 数据库主从故障切换"
-    echo -e " ${GREEN}4)${NC} 🚫 一键封禁可疑 IP"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
-    echo -e "${BLUE}============================================================${NC}"
-    read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
-}
-
-# ---------- 文档菜单 ----------
-show_docs_menu() {
-    safe_clear
-    show_header
-    echo ""
-    echo -e "${WHITE}【📖 架构文档与帮助手册】${NC}"
-    echo -e "${BLUE}============================================================${NC}"
-    echo -e " ${GREEN}1)${NC} 🏗️  架构详解"
-    echo -e " ${GREEN}2)${NC} 🔧 故障排查手册"
-    echo -e " ${GREEN}3)${NC} 🤝 贡献指南"
-    echo -e " ${GREEN}4)${NC} 📖 术语表"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
-    echo -e "${BLUE}============================================================${NC}"
-    read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
 }
 
 # ---------- 已安装应用清单 ----------
