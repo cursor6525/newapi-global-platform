@@ -1,25 +1,11 @@
-# File: scripts/main.sh
 #!/usr/bin/env bash
 # ============================================================
 # NewAPI 全球化平台 · 中文交互式总控台 (彩色版)
 # 版本: v1.2.0
 # 特性: 自动检测终端颜色支持 / 防闪烁 / 兼容性强
-# 适配: 中文交互式控制台 适配 .newapi-brain 独立 GitHub 模板仓库
 # ============================================================
 
 set -o pipefail
-
-# ======================== 自动加载 .newapi-brain 全局大脑 ========================
-AUTO_BRAIN_URL="https://github.com/cursor6525/.newapi-brain.git"
-BRAIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.newapi-brain" && pwd)"
-
-if [[ ! -d "${BRAIN_DIR}" ]]; then
-    echo "[${date '+%H:%M:%S'}] 未检测到全局大脑，正在自动克隆..."
-    git clone ${AUTO_BRAIN_URL} "${BRAIN_DIR}" >/dev/null 2>&1
-    chmod +x "${BRAIN_DIR}/core/"*.sh
-    echo "[${date '+%H:%M:%S'}] ✅ 全局大脑自动安装完成"
-fi
-source "${BRAIN_DIR}/core/brain.sh"
 
 # ---------- 全局路径 ----------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,7 +31,7 @@ else
     CYAN=''; WHITE=''; GRAY=''; BOLD=''; NC=''
 fi
 
-# ---------- 通用工具 ----------
+# ---------- 通用工具函数（已按图片修正） ----------
 log()   { echo -e "${GRAY}[$(date '+%H:%M:%S')]${NC} $*" | tee -a "${LOG_DIR}/main.log" >/dev/null; }
 ok()    { echo -e "${GREEN}✅ $*${NC}"; }
 warn()  { echo -e "${YELLOW}⚠️  $*${NC}"; }
@@ -70,38 +56,136 @@ get_sys_info() {
     NOW_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "未知")
     HOSTNAME_INFO=$(hostname 2>/dev/null || echo "未知")
+    get_netbird_ip
 }
 
-# ---------- 应用状态检测（从全局大脑读取） ----------
-check_app_status() {
-    local app="$1"
-    local node="node-a"
-    if [[ "$app" == "mysql" || "$app" == "redis" ]]; then
-        node="node-b"
-    fi
-    local status=$(brain_get_state ${node} ${app})
-    if [[ "$status" == "✅ 部署成功" ]]; then
-        echo -e "${GREEN}${status}${NC}"
-    else
-        echo -e "${GRAY}${status}${NC}"
-    fi
+# ---------- 获取 NetBird 组网 IP（按图片新增函数） ----------
+get_netbird_ip() {
+    NETBIRD_IP=$(ip a 2>/dev/null | grep -A1 wt0 | grep inet | awk '{print $2}' | cut -d/ -f1 2>/dev/null || echo "未接入 NetBird")
 }
 
+# ---------- 节点部署状态读取（按图片新增） ----------
 get_node_status() {
     local node="$1"
-    local status=$(brain_get_state ${node} k3s)
-    if [[ "$status" == "✅ 部署成功" ]]; then
+    if [[ -f "${INVENTORY_DIR}/${node}.state" ]]; then
         echo -e "${GREEN}✅ 已部署｜健康${NC}"
     else
         echo -e "${YELLOW}未部署${NC}"
     fi
 }
 
-# ---------- 头部横幅 ----------
+# ---------- 从全局大脑读取应用状态（按图片新增） ----------
+query_app_state() {
+    local node="$1"
+    local app="$2"
+    if [[ -f "${INVENTORY_DIR}/${node}.state" ]]; then
+        grep -q "APP_${app}=installed" "${INVENTORY_DIR}/${node}.state" && echo -e "${GREEN}✅ 部署成功${NC}" || echo -e "${GRAY}未部署${NC}"
+    else
+        echo -e "${GRAY}未部署${NC}"
+    fi
+}
+
+# ---------- 全局服务部署总览看板（按图片新增） ----------
+show_global_service_table() {
+    echo ""
+    echo -e "${WHITE}【📊 全局服务部署总览 | NEWAPI 全局大脑数据看板】${NC}"
+    echo -e "${BLUE}=====================================================================${NC}"
+    printf " ${CYAN}%-8s %-8s %-8s %-8s %-10s %-8s %-8s${NC}\n" "节点" "K3s" "NetBird" "Nginx" "NewAPI" "MySQL" "Redis"
+    echo -e "${BLUE}---------------------------------------------------------------------${NC}"
+    printf " 节点A  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-a k3s)" \
+        "$(query_app_state node-a netbird)" \
+        "$(query_app_state node-a nginx)" \
+        "$(query_app_state node-a newapi)" \
+        "$(query_app_state node-a mysql)" \
+        "$(query_app_state node-a redis)"
+    printf " 节点B  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-b k3s)" \
+        "$(query_app_state node-b netbird)" \
+        "$(query_app_state node-b nginx)" \
+        "$(query_app_state node-b newapi)" \
+        "$(query_app_state node-b mysql)" \
+        "$(query_app_state node-b redis)"
+    printf " 节点C  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-c k3s)" \
+        "$(query_app_state node-c netbird)" \
+        "$(query_app_state node-c nginx)" \
+        "$(query_app_state node-c newapi)" \
+        "$(query_app_state node-c mysql)" \
+        "$(query_app_state node-c redis)"
+    printf " 节点D  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-d k3s)" \
+        "$(query_app_state node-d netbird)" \
+        "$(query_app_state node-d nginx)" \
+        "$(query_app_state node-d newapi)" \
+        "$(query_app_state node-d mysql)" \
+        "$(query_app_state node-d redis)"
+    printf " 节点E  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-e k3s)" \
+        "$(query_app_state node-e netbird)" \
+        "$(query_app_state node-e nginx)" \
+        "$(query_app_state node-e newapi)" \
+        "$(query_app_state node-e mysql)" \
+        "$(query_app_state node-e redis)"
+    printf " 节点F  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-f k3s)" \
+        "$(query_app_state node-f netbird)" \
+        "$(query_app_state node-f nginx)" \
+        "$(query_app_state node-f newapi)" \
+        "$(query_app_state node-f mysql)" \
+        "$(query_app_state node-f redis)"
+    printf " 节点G  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-g k3s)" \
+        "$(query_app_state node-g netbird)" \
+        "$(query_app_state node-g nginx)" \
+        "$(query_app_state node-g newapi)" \
+        "$(query_app_state node-g mysql)" \
+        "$(query_app_state node-g redis)"
+    echo -e "${BLUE}=====================================================================${NC}"
+    echo -e "${GRAY}说明：绿色✅部署成功｜灰色未部署｜数据源：NEWAPI全局大脑文件夹${NC}"
+}
+
+# ---------- 单节点本机软件清单（按图片新增） ----------
+show_local_app_list() {
+    local node="$1"
+    echo ""
+    echo -e "${WHITE}【📋 本节点软件安装清单】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e " K3s 集群控制面      : $(query_app_state ${node} k3s)"
+    echo -e " NetBird 零信任组网  : $(query_app_state ${node} netbird)"
+    echo -e " Nginx 边缘网关      : $(query_app_state ${node} nginx)"
+    echo -e " NewAPI 业务网关     : $(query_app_state ${node} newapi)"
+    echo -e " MySQL 数据库        : $(query_app_state ${node} mysql)"
+    echo -e " Redis 缓存哨兵      : $(query_app_state ${node} redis)"
+    echo -e " 监控运维套件        : $(query_app_state ${node} monitoring)"
+    echo -e "${BLUE}============================================================${NC}"
+}
+
+# ---------- 应用状态检测（兼容旧逻辑） ----------
+check_app_status() {
+    local app="$1"
+    local active=false
+    case "$app" in
+        k3s)        systemctl is-active --quiet k3s 2>/dev/null && active=true ;;
+        netbird)    systemctl is-active --quiet netbird 2>/dev/null && active=true ;;
+        nginx)      systemctl is-active --quiet nginx 2>/dev/null && active=true ;;
+        mysql)      (systemctl is-active --quiet mysql 2>/dev/null || systemctl is-active --quiet mysqld 2>/dev/null) && active=true ;;
+        redis)      (systemctl is-active --quiet redis 2>/dev/null || systemctl is-active --quiet redis-server 2>/dev/null) && active=true ;;
+        newapi)     kubectl get pod -n newapi 2>/dev/null | grep -q Running && active=true ;;
+        monitoring) kubectl get pod -n monitoring 2>/dev/null | grep -q Running && active=true ;;
+    esac
+    if $active; then
+        echo -e "${GREEN}✅ 已安装｜运行中${NC}"
+    else
+        echo -e "${GRAY}未安装${NC}"
+    fi
+}
+
+# ---------- 头部横幅（按图片修正格式） ----------
 show_header() {
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}     ${GRAY}已适配 .newapi-brain 全局大脑模板仓库${NC}                ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}     ${GRAY}部署｜运维｜监控｜扩容｜全局服务资产总览${NC}                ${BLUE}║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 }
 
@@ -111,6 +195,8 @@ show_main_menu() {
         safe_clear
         show_header
         get_sys_info
+        echo ""
+        show_global_service_table
         echo ""
         echo -e "${WHITE}【主菜单 · 请选择运维场景】${NC}"
         echo -e "${BLUE}============================================================${NC}"
@@ -124,7 +210,7 @@ show_main_menu() {
         echo -e " ${GREEN}8)${NC} 📖 查看文档与帮助    ${GRAY}（架构 / 故障排查 / 术语）${NC}"
         echo -e " ${RED}0)${NC} 🚪 退出总控台"
         echo -e "${BLUE}============================================================${NC}"
-        echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
+        echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
         echo ""
         read -rp "$(echo -e ${CYAN}请输入选项序号：${NC} )" MAIN_OPT
         case "$MAIN_OPT" in
@@ -147,6 +233,7 @@ show_plan_menu() {
     while true; do
         safe_clear
         show_header
+        show_global_service_table
         echo ""
         echo -e "${WHITE}【🚀 部署架构选型】${NC}"
         echo -e "${BLUE}============================================================${NC}"
@@ -177,6 +264,7 @@ show_plan_minimal() {
     while true; do
         safe_clear
         show_header
+        show_global_service_table
         echo ""
         echo -e "${GREEN}【2 台服务器 ｜ 最小生产架构 · 业务数据分离】${NC}"
         echo -e "${BLUE}============================================================${NC}"
@@ -201,7 +289,7 @@ show_plan_minimal() {
     done
 }
 
-# ---------- 节点 A 界面 ----------
+# ---------- 节点 A 界面（已添加 NetBird IP） ----------
 show_node_a_menu() {
     while true; do
         safe_clear
@@ -220,6 +308,7 @@ show_node_a_menu() {
         echo -e "${BLUE}============================================================${NC}"
         echo -e "${CYAN}【主机名】${NC}：${HOSTNAME_INFO}"
         echo -e "${CYAN}【内网 IP】${NC}：${LOCAL_IP}"
+        echo -e "${CYAN}【NetBird IP】${NC}：${NETBIRD_IP}"
         echo -e "${CYAN}【系统】${NC}  ：${OS_INFO} (内核 ${KERNEL_VER})"
         echo -e "${CYAN}【配置】${NC}  ：CPU ${CPU_COUNT} 核 ｜ 内存 ${MEM_INFO} ｜ 磁盘 ${DISK_INFO}"
         echo -e "${CYAN}【时间】${NC}  ：${NOW_TIME}"
@@ -227,6 +316,7 @@ show_node_a_menu() {
         echo -e "${YELLOW}⚠️  角色定义：总控 + 控制面 + 业务网关 + 边缘入口${NC}"
         echo -e "${RED}❗ 严禁在本节点安装数据库 / Redis 等数据组件${NC}"
         echo -e "${BLUE}============================================================${NC}"
+        show_local_app_list node-a
         echo ""
         echo -e "${WHITE}✅ 可安装应用清单（仅节点 A 允许）：${NC}"
         echo ""
@@ -235,19 +325,19 @@ show_node_a_menu() {
         echo -e " ${GREEN}3)${NC} Nginx 边缘网关（公网入口）     → ${nginx_s}"
         echo -e " ${GREEN}4)${NC} NewAPI 网关服务（核心业务）   → ${newapi_s}"
         echo -e " ${GREEN}5)${NC} 监控系统（VM + Loki + 告警）   → ${mon_s}"
-        echo -e " ${GREEN}6)${NC} 模型推理服务（可选）           → ${GRAY}未部署${NC}"
+        echo -e " ${GREEN}6)${NC} 模型推理服务（可选）           → ${GRAY}未安装${NC}"
         echo -e " ${GREEN}7)${NC} 📋 查看本节点已安装应用清单"
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
         echo -e "${BLUE}============================================================${NC}"
         read -rp "$(echo -e ${CYAN}请输入要安装的应用序号：${NC} )" APP_OPT
         case "$APP_OPT" in
-            1) install_app "k3s-server"        "节点 A" "node-a" "k3s" ;;
-            2) install_app "netbird-server"    "节点 A" "node-a" "netbird" ;;
-            3) install_app "nginx-edge"        "节点 A" "node-a" "nginx" ;;
-            4) install_app "newapi-gateway"    "节点 A" "node-a" "newapi" ;;
-            5) install_app "monitoring-stack"  "节点 A" "node-a" "monitoring" ;;
-            6) install_app "model-inference"   "节点 A" "node-a" "model" ;;
+            1) install_app "k3s-server"        "节点 A" ;;
+            2) install_app "netbird-server"    "节点 A" ;;
+            3) install_app "nginx-edge"        "节点 A" ;;
+            4) install_app "newapi-gateway"    "节点 A" ;;
+            5) install_app "monitoring-stack"  "节点 A" ;;
+            6) install_app "model-inference"   "节点 A" ;;
             7) list_installed_apps "node-a" ;;
             8) info "巡检功能开发中..."; pause ;;
             9) return ;;
@@ -256,7 +346,7 @@ show_node_a_menu() {
     done
 }
 
-# ---------- 节点 B 界面 ----------
+# ---------- 节点 B 界面（已添加 NetBird IP） ----------
 show_node_b_menu() {
     while true; do
         safe_clear
@@ -273,6 +363,7 @@ show_node_b_menu() {
         echo -e "${BLUE}============================================================${NC}"
         echo -e "${CYAN}【主机名】${NC}：${HOSTNAME_INFO}"
         echo -e "${CYAN}【内网 IP】${NC}：${LOCAL_IP}"
+        echo -e "${CYAN}【NetBird IP】${NC}：${NETBIRD_IP}"
         echo -e "${CYAN}【系统】${NC}  ：${OS_INFO} (内核 ${KERNEL_VER})"
         echo -e "${CYAN}【配置】${NC}  ：CPU ${CPU_COUNT} 核 ｜ 内存 ${MEM_INFO} ｜ 磁盘 ${DISK_INFO}"
         echo -e "${CYAN}【时间】${NC}  ：${NOW_TIME}"
@@ -281,27 +372,28 @@ show_node_b_menu() {
         echo -e "${RED}❗ 禁止安装业务服务 / K3s 控制面 / Nginx 网关${NC}"
         echo -e "${RED}❗ 此节点仅承载数据库、缓存、备份等数据组件${NC}"
         echo -e "${BLUE}============================================================${NC}"
+        show_local_app_list node-b
         echo ""
         echo -e "${WHITE}✅ 可安装应用清单（仅数据节点允许）：${NC}"
         echo ""
         echo -e " ${GREEN}1)${NC} MySQL 数据库（主从 + 半同步）     → ${mysql_s}"
         echo -e " ${GREEN}2)${NC} Redis 缓存（哨兵模式）             → ${redis_s}"
-        echo -e " ${GREEN}3)${NC} 自动备份服务（异地 + 加密）       → ${GRAY}未部署${NC}"
+        echo -e " ${GREEN}3)${NC} 自动备份服务（异地 + 加密）       → ${GRAY}未安装${NC}"
         echo -e " ${GREEN}4)${NC} NetBird 客户端（加入加密网格）   → ${netbird_s}"
-        echo -e " ${GREEN}5)${NC} ProxySQL 读写分离（可选）         → ${GRAY}未部署${NC}"
-        echo -e " ${GREEN}6)${NC} etcd 备份代理（可选）             → ${GRAY}未部署${NC}"
+        echo -e " ${GREEN}5)${NC} ProxySQL 读写分离（可选）         → ${GRAY}未安装${NC}"
+        echo -e " ${GREEN}6)${NC} etcd 备份代理（可选）             → ${GRAY}未安装${NC}"
         echo -e " ${GREEN}7)${NC} 📋 查看本节点已安装应用清单"
         echo -e " ${GREEN}8)${NC} 🩺 一键巡检本节点健康状态"
         echo -e " ${RED}9)${NC} ⬅️  返回节点选择"
         echo -e "${BLUE}============================================================${NC}"
         read -rp "$(echo -e ${CYAN}请输入要安装的应用序号：${NC} )" APP_OPT
         case "$APP_OPT" in
-            1) install_app "mysql-ha"        "节点 B" "node-b" "mysql" ;;
-            2) install_app "redis-sentinel"  "节点 B" "node-b" "redis" ;;
-            3) install_app "backup-cronjob"  "节点 B" "node-b" "backup" ;;
-            4) install_app "netbird-client"  "节点 B" "node-b" "netbird" ;;
-            5) install_app "proxysql"        "节点 B" "node-b" "proxysql" ;;
-            6) install_app "etcd-backup"     "节点 B" "node-b" "etcd" ;;
+            1) install_app "mysql-ha"        "节点 B" ;;
+            2) install_app "redis-sentinel"  "节点 B" ;;
+            3) install_app "backup-cronjob"  "节点 B" ;;
+            4) install_app "netbird-client"  "节点 B" ;;
+            5) install_app "proxysql"        "节点 B" ;;
+            6) install_app "etcd-backup"     "节点 B" ;;
             7) list_installed_apps "node-b" ;;
             8) info "巡检功能开发中..."; pause ;;
             9) return ;;
@@ -310,12 +402,10 @@ show_node_b_menu() {
     done
 }
 
-# ---------- 应用安装统一入口（自动写入全局大脑） ----------
+# ---------- 应用安装统一入口 ----------
 install_app() {
     local app="$1"
     local node="$2"
-    local brain_node="$3"
-    local brain_app="$4"
     safe_clear
     show_header
     echo ""
@@ -326,7 +416,7 @@ install_app() {
     echo -e "  ${GREEN}2)${NC} 拉取官方镜像 / 安装包"
     echo -e "  ${GREEN}3)${NC} 生成默认配置（可后续编辑）"
     echo -e "  ${GREEN}4)${NC} 启动服务并验证健康状态"
-    echo -e "  ${GREEN}5)${NC} 写入节点资产清单 + 同步 .newapi-brain 全局大脑"
+    echo -e "  ${GREEN}5)${NC} 写入节点资产清单（.state 文件）"
     echo ""
     read -rp "$(echo -e ${CYAN}是否继续？[y/N]：${NC} )" CONFIRM
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
@@ -337,9 +427,12 @@ install_app() {
             warn "安装脚本 install-${app}.sh 暂未实现"
             sleep 2
         fi
-        # 写入全局大脑
-        brain_write_state "${brain_node}" "${brain_app}"
-        ok "${app} 安装流程结束 → 已同步全局大脑"
+        # 写入全局大脑状态文件
+        local node_name
+        if [[ "$node" == "节点 A" ]]; then node_name="node-a"; fi
+        if [[ "$node" == "节点 B" ]]; then node_name="node-b"; fi
+        echo "APP_${app}=installed" >> "${INVENTORY_DIR}/${node_name}.state"
+        ok "${app} 安装流程结束 → 已写入全局大脑状态"
     else
         warn "已取消安装"
     fi
@@ -350,6 +443,7 @@ install_app() {
 show_plan_regional() {
     safe_clear
     show_header
+    show_global_service_table
     echo ""
     echo -e "${WHITE}【🌏 多区域架构】(开发中)${NC}"
     echo -e "${BLUE}============================================================${NC}"
@@ -366,6 +460,7 @@ show_plan_regional() {
 show_plan_enterprise() {
     safe_clear
     show_header
+    show_global_service_table
     echo ""
     echo -e "${WHITE}【🌐 企业级全球化架构】${NC}"
     echo -e "${BLUE}============================================================${NC}"
@@ -469,7 +564,7 @@ show_incident_menu() {
     echo -e " ${GREEN}2)${NC} 💾 etcd 快照恢复"
     echo -e " ${GREEN}3)${NC} 🔥 数据库主从故障切换"
     echo -e " ${GREEN}4)${NC} 🚫 一键封禁可疑 IP"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
+    echo -e "${RED}9)${NC} ⬅️  返回主菜单"
     echo -e "${BLUE}============================================================${NC}"
     read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
 }
@@ -485,7 +580,7 @@ show_docs_menu() {
     echo -e " ${GREEN}2)${NC} 🔧 故障排查手册"
     echo -e " ${GREEN}3)${NC} 🤝 贡献指南"
     echo -e " ${GREEN}4)${NC} 📖 术语表"
-    echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
+    echo -e "${RED}9)${NC} ⬅️  返回主菜单"
     echo -e "${BLUE}============================================================${NC}"
     read -rp "$(echo -e ${CYAN}请选择：${NC} )" _
 }
