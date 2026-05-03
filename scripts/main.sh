@@ -786,7 +786,7 @@ case "$S_OPT" in
     return
     ;;
 *)
-    err "无效选项"; sleep 1
+    err "无效选项，请重新输入"; sleep 1
     ;;
 esac
 done
