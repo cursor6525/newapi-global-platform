@@ -222,7 +222,7 @@ show_plan_menu() {
             2) show_plan_regional ;;
             3) show_plan_enterprise ;;
             9) return ;;
-            *) err "无效选项"; sleep 1 ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
     done
 }
@@ -252,7 +252,7 @@ show_plan_minimal() {
             1) show_node_a_menu ;;
             2) show_node_b_menu ;;
             9) return ;;
-            *) err "无效选项"; sleep 1 ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
     done
 }
@@ -308,7 +308,7 @@ show_node_a_menu() {
             7) list_installed_apps "node-a" ;;
             8) info "巡检功能开发中..."; pause ;;
             9) return ;;
-            *) err "无效选项"; sleep 1 ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
     done
 }
@@ -363,7 +363,7 @@ show_node_b_menu() {
             7) list_installed_apps "node-b" ;;
             8) info "巡检功能开发中..."; pause ;;
             9) return ;;
-            *) err "无效选项"; sleep 1 ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
     done
 }
@@ -472,7 +472,7 @@ case "$I_OPT" in
 2) info "进入新节点注册流程"; pause ;;
 3) info "进入节点下线流程"; pause ;;
 9) return ;;
-*) err "无效选项"; sleep 1 ;;
+*) err "无效选项，请重新输入"; sleep 1 ;;
 esac
 done
 }
@@ -504,7 +504,7 @@ case "$M_OPT" in
 5) info "测试邮件/机器人告警..."; pause ;;
 6) info "检测NetBird集群节点连通性..."; pause ;;
 9) return ;;
-*) err "无效选项"; sleep 1 ;;
+*) err "无效选项，请重新输入"; sleep 1 ;;
 esac
 done
 }
@@ -537,7 +537,7 @@ case "$O_OPT" in
 5) info "从备份恢复集群配置..."; pause ;;
 6) info "密钥轮转/证书续期..."; pause ;;
 9) return ;;
-*) err "无效选项"; sleep 1 ;;
+*) err "无效选项，请重新输入"; sleep 1 ;;
 esac
 done
 }
@@ -589,7 +589,7 @@ done
 # 6) info "正在执行：新增海外跨区容灾节点接入集群..."; pause ;;
 # 7) info "正在执行：系统级资源扩容（CPU/内存/磁盘）..."; pause ;;
 # 9) return ;;
-# *) err "无效选项"; sleep 1 ;;
+# *) err "无效选项，请重新输入"; sleep 1 ;;
 # esac
 # done
 # }
@@ -817,7 +817,7 @@ case "$D_OPT" in
 4) info "集群快照备份与还原..."; pause ;;
 5) info "WAF黑名单一键封禁..."; pause ;;
 9) return ;;
-*) err "无效选项"; sleep 1 ;;
+*) err "无效选项，请重新输入"; sleep 1 ;;
 esac
 done
 }
@@ -847,7 +847,7 @@ case "$DOC_OPT" in
 4) info "打开部署与扩容流程文档..."; pause ;;
 5) info "打开术语解释文档..."; pause ;;
 9) return ;;
-*) err "无效选项"; sleep 1 ;;
+*) err "无效选项，请重新输入"; sleep 1 ;;
 esac
 done
 }
