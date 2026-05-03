@@ -254,54 +254,252 @@ esac
 done
 }
 
+# # ============================================================
+# # 5. 集群弹性扩容管理 子菜单（按你的需求调整）
+# # ============================================================
+# show_scale_main() {
+# while true; do
+# safe_clear
+# show_header
+# show_global_service_table
+# echo ""
+# echo -e "${WHITE}【⬆️  集群弹性扩容管理｜无缝升级 不重构架构】${NC}"
+# echo -e "${BLUE}============================================================${NC}"
+# # 1. 阶段式扩容（架构升级）
+# echo -e " ${GREEN}1)${NC} 🏠 ${YELLOW}最小生产架构 → 升级单区域生产块${NC}"
+# echo -e "       ${GRAY}└─ 2台 → 3-6台 ｜ 业务数据扩展 ｜ 适合 MVP 上量${NC}"
+# echo ""
+# echo -e " ${GREEN}2)${NC} 🌏 ${YELLOW}单区域基础块 → 升级全球化架构${NC}"
+# echo -e "       ${GRAY}└─ 3-6台 → 7+台 ｜ 跨区高可用 ｜ 适合区域级 SaaS${NC}"
+# echo ""
+# # 2. 横向扩容（节点类型扩展）
+# echo -e " ${GREEN}3)${NC} 🌐 ${YELLOW}企业级全球化 → 多云多活扩展${NC}"
+# echo -e "       ${GRAY}└─ 7+台 → 无限扩展 ｜ 全球节点新增 ｜ 跨国企业架构${NC}"
+# echo ""
+# echo -e " ${GREEN}4)${NC} 📡 ${YELLOW}横向新增业务边缘节点${NC}"
+# echo -e "       ${GRAY}└─ 新增公网接入/缓存节点 ｜ 降低主节点压力${NC}"
+# echo ""
+# echo -e " ${GREEN}5)${NC} 💾 ${YELLOW}横向新增数据存储节点${NC}"
+# echo -e "       ${GRAY}└─ 新增MySQL/Redis节点 ｜ 读写分离/分片扩展${NC}"
+# echo ""
+# echo -e " ${GREEN}6)${NC} 🛡️ ${YELLOW}新增海外跨区容灾节点${NC}"
+# echo -e "       ${GRAY}└─ 新增异地备份节点 ｜ 多活/灾备架构扩展${NC}"
+# echo ""
+# # 3. 补充：系统级扩容
+# echo -e " ${GREEN}7)${NC} ⚙️ ${YELLOW}系统级资源扩容（CPU/内存/磁盘）${NC}"
+# echo -e "       ${GRAY}└─ 升级节点硬件/替换高配服务器 ｜ 单节点性能瓶颈突破${NC}"
+# echo ""
+# echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
+# echo -e "${BLUE}============================================================${NC}"
+# read -p "$(printf "${CYAN}请选择扩容方式：${NC} ")" S_OPT
+# case "$S_OPT" in
+# 1) info "正在执行：2台 → 3-6台 单区域生产块扩容..."; pause ;;
+# 2) info "正在执行：3-6台 → 7+台 全球化架构扩容..."; pause ;;
+# 3) info "正在执行：7+台 → 无限扩展 多云多活扩容..."; pause ;;
+# 4) info "正在执行：新增业务边缘节点接入集群..."; pause ;;
+# 5) info "正在执行：新增数据存储节点接入集群..."; pause ;;
+# 6) info "正在执行：新增海外跨区容灾节点接入集群..."; pause ;;
+# 7) info "正在执行：系统级资源扩容（CPU/内存/磁盘）..."; pause ;;
+# 9) return ;;
+# *) err "无效选项"; sleep 1 ;;
+# esac
+# done
+# }
+
 # ============================================================
-# 5. 集群弹性扩容管理 子菜单（按你的需求调整）
+# 5. 集群弹性扩容管理｜带区域规则自动提示
 # ============================================================
 show_scale_main() {
 while true; do
 safe_clear
 show_header
 show_global_service_table
+
+# ========== 【全局大脑读取当前集群状态】 ==========
+local has_biz=$(ls ${INVENTORY_DIR}/*.state 2>/dev/null | grep -E "newapi" | wc -l)
+local has_data=$(ls ${INVENTORY_DIR}/*.state 2>/dev/null | grep -E "mysql|redis" | wc -l)
+local has_global=$(ls ${INVENTORY_DIR}/*.state 2>/dev/null | grep -E "node-d|node-e|node-f" | wc -l)
+local ha_level="单区域架构"
+[[ $has_global -gt 0 ]] && ha_level="全球化架构"
+
 echo ""
-echo -e "${WHITE}【⬆️  集群弹性扩容管理｜无缝升级 不重构架构】${NC}"
-echo -e "${BLUE}============================================================${NC}"
-# 1. 阶段式扩容（架构升级）
-echo -e " ${GREEN}1)${NC} 🏠 ${YELLOW}最小生产架构 → 升级单区域生产块${NC}"
-echo -e "       ${GRAY}└─ 2台 → 3-6台 ｜ 业务数据扩展 ｜ 适合 MVP 上量${NC}"
+echo -e "${WHITE}【⬆️  智能扩容总控台｜根据你的集群实时推荐】${NC}"
+echo -e "${BLUE}=========================================================================${NC}"
+echo -e "${CYAN}📊 你的集群当前状态：${NC}"
+echo -e "   已安装业务节点：${GREEN}${has_biz} 个${NC}   已安装数据节点：${GREEN}${has_data} 个${NC}   架构等级：${GREEN}${ha_level}${NC}"
+echo -e "${BLUE}=========================================================================${NC}"
 echo ""
-echo -e " ${GREEN}2)${NC} 🌏 ${YELLOW}单区域基础块 → 升级全球化架构${NC}"
-echo -e "       ${GRAY}└─ 3-6台 → 7+台 ｜ 跨区高可用 ｜ 适合区域级 SaaS${NC}"
+echo -e "${WHITE}🧩 积木式扩容（新服务器 + 部署应用 = 无缝扩容）${NC}"
 echo ""
-# 2. 横向扩容（节点类型扩展）
-echo -e " ${GREEN}3)${NC} 🌐 ${YELLOW}企业级全球化 → 多云多活扩展${NC}"
-echo -e "       ${GRAY}└─ 7+台 → 无限扩展 ｜ 全球节点新增 ｜ 跨国企业架构${NC}"
+
+echo -e "${GREEN}1)${NC} 🏠 ${YELLOW}最小生产架构 → 升级单区域生产块${NC}"
+echo -e "       ${GRAY}└─ 2台 → 3-6台｜业务数据扩展｜适合 MVP 上量${NC}"
 echo ""
-echo -e " ${GREEN}4)${NC} 📡 ${YELLOW}横向新增业务边缘节点${NC}"
-echo -e "       ${GRAY}└─ 新增公网接入/缓存节点 ｜ 降低主节点压力${NC}"
+
+echo -e "${GREEN}2)${NC} 🌏 ${YELLOW}单区域基础块 → 升级全球化架构${NC}"
+echo -e "       ${GRAY}└─ 3-6台 → 7+台｜跨区高可用｜适合区域级 SaaS${NC}"
 echo ""
-echo -e " ${GREEN}5)${NC} 💾 ${YELLOW}横向新增数据存储节点${NC}"
-echo -e "       ${GRAY}└─ 新增MySQL/Redis节点 ｜ 读写分离/分片扩展${NC}"
+
+echo -e "${GREEN}3)${NC} 🌐 ${YELLOW}企业级全球化 → 多云多活扩展${NC}"
+echo -e "       ${GRAY}└─ 7+台 → 无限扩展｜全球节点新增｜跨国企业架构${NC}"
 echo ""
-echo -e " ${GREEN}6)${NC} 🛡️ ${YELLOW}新增海外跨区容灾节点${NC}"
-echo -e "       ${GRAY}└─ 新增异地备份节点 ｜ 多活/灾备架构扩展${NC}"
+
+echo -e "${GREEN}4)${NC} 📡 ${YELLOW}横向新增业务边缘节点${NC}"
+echo -e "       ${GRAY}└─ 新增公网接入/缓存节点｜降低主节点压力${NC}"
 echo ""
-# 3. 补充：系统级扩容
-echo -e " ${GREEN}7)${NC} ⚙️ ${YELLOW}系统级资源扩容（CPU/内存/磁盘）${NC}"
-echo -e "       ${GRAY}└─ 升级节点硬件/替换高配服务器 ｜ 单节点性能瓶颈突破${NC}"
+
+echo -e "${GREEN}5)${NC} 💾 ${YELLOW}横向新增数据存储节点${NC}"
+echo -e "       ${GRAY}└─ 新增MySQL/Redis节点｜读写分离/分片扩展${NC}"
 echo ""
-echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
-echo -e "${BLUE}============================================================${NC}"
-read -p "$(printf "${CYAN}请选择扩容方式：${NC} ")" S_OPT
+
+echo -e "${GREEN}6)${NC} 🛡️ ${YELLOW}新增海外跨区容灾节点${NC}"
+echo -e "       ${GRAY}└─ 新增异地备份节点｜多活/灾备架构扩展${NC}"
+echo ""
+
+echo -e "${RED}9)${NC} ⬅️  返回主菜单"
+echo -e "${BLUE}=========================================================================${NC}"
+read -p "$(printf "${CYAN}请选择扩容方案（系统已根据你的集群自动推荐）：${NC} ")" S_OPT
+
 case "$S_OPT" in
-1) info "正在执行：2台 → 3-6台 单区域生产块扩容..."; pause ;;
-2) info "正在执行：3-6台 → 7+台 全球化架构扩容..."; pause ;;
-3) info "正在执行：7+台 → 无限扩展 多云多活扩容..."; pause ;;
-4) info "正在执行：新增业务边缘节点接入集群..."; pause ;;
-5) info "正在执行：新增数据存储节点接入集群..."; pause ;;
-6) info "正在执行：新增海外跨区容灾节点接入集群..."; pause ;;
-7) info "正在执行：系统级资源扩容（CPU/内存/磁盘）..."; pause ;;
-9) return ;;
-*) err "无效选项"; sleep 1 ;;
+1)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容1：最小生产架构 → 升级单区域生产块】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${RED}❌ 禁止跨区${NC}：新增节点必须与节点A（K3s控制面）同区域"
+    echo -e "  ${GREEN}✅ 推荐标准${NC}：同机房/同区域，延迟 < 10ms"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  新增节点C（业务工作边缘节点）："
+    echo -e "    → 部署：NetBird客户端 + Nginx + NewAPI + K3s Agent + 监控探针"
+    echo -e "    → 禁止：MySQL/Redis、K3s控制面"
+    echo ""
+    echo -e "  新增节点D（只读数据从库节点）："
+    echo -e "    → 部署：NetBird客户端 + MySQL从库 + Redis从库 + 备份"
+    echo -e "    → 禁止：业务网关、K3s"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+2)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容2：单区域基础块 → 升级全球化架构】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${GREEN}✅ 推荐跨区${NC}：新增节点选择目标用户所在区域（海外/其他区域）"
+    echo -e "  ${CYAN}ℹ️  延迟要求${NC}：无强制限制，可就近服务用户"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  新增节点D（海外业务边缘节点）："
+    echo -e "    → 部署：NetBird客户端 + Nginx + NewAPI + 监控探针"
+    echo -e "    → 禁止：K3s控制面、数据库类组件"
+    echo ""
+    echo -e "  新增节点E（海外只读数据从库节点）："
+    echo -e "    → 部署：NetBird客户端 + MySQL从库 + Redis从库 + 备份"
+    echo -e "    → 禁止：业务网关、K3s"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+3)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容3：企业级全球化 → 多云多活扩展】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${GREEN}✅ 多云多区部署${NC}：可新增不同云厂商、不同区域的服务器"
+    echo -e "  ${RED}❌ 注意${NC}：K3s集群内部节点必须同区域，跨区节点不加入K3s"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  新增节点G（多云业务边缘节点）："
+    echo -e "    → 部署：NetBird客户端 + Nginx + NewAPI + 监控探针"
+    echo -e "    → 禁止：K3s控制面、数据库类组件"
+    echo ""
+    echo -e "  新增节点H（多云数据从库节点）："
+    echo -e "    → 部署：NetBird客户端 + MySQL从库 + Redis从库 + 备份"
+    echo -e "    → 禁止：业务网关、K3s"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+4)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容4：横向新增业务边缘节点】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${RED}❌ 禁止跨区（若加入K3s集群）${NC}：必须与节点A同区域，延迟 < 10ms"
+    echo -e "  ${GREEN}✅ 可选跨区（仅做反向代理）${NC}：可部署在海外，就近服务用户"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  节点角色：业务工作边缘/备用流量入口"
+    echo -e "  必须部署：NetBird客户端 + Nginx + NewAPI + 监控探针"
+    echo -e "  可选部署：K3s Agent（加入集群调度）"
+    echo -e "  禁止部署：MySQL/Redis、K3s控制面"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+5)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容5：横向新增数据存储节点】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${GREEN}✅ 推荐跨区部署${NC}：可部署在同区域/其他区域/海外，做读写分离/容灾"
+    echo -e "  ${CYAN}ℹ️  延迟要求${NC}：跨区延迟 < 100ms，不影响数据同步即可"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  节点角色：只读数据从库节点"
+    echo -e "  必须部署：NetBird客户端 + MySQL从库 + Redis从库 + 备份服务"
+    echo -e "  禁止部署：业务网关、K3s集群组件"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+6)
+    safe_clear
+    show_header
+    show_global_service_table
+    echo ""
+    echo -e "${WHITE}【扩容6：新增海外跨区容灾节点】${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${YELLOW}📌 服务器选择规则（必须遵守）：${NC}"
+    echo -e "  ${GREEN}✅ 强制跨区部署${NC}：推荐同区域跨机房/异地跨区，避免单机房故障"
+    echo -e "  ${CYAN}ℹ️  延迟要求${NC}：无强制限制，保证NetBird内网连通即可"
+    echo ""
+    echo -e "${CYAN}📝 节点分工与部署清单：${NC}"
+    echo -e "  节点角色：同城/异地容灾备份节点"
+    echo -e "  必须部署：NetBird客户端 + 集群备份 + 数据归档 + 灾备同步服务"
+    echo -e "  禁止部署：线上业务服务、K3s集群组件"
+    echo ""
+    echo -e "${BLUE}============================================================${NC}"
+    info "请按规则准备服务器，准备完成后可执行自动部署流程"
+    pause
+    ;;
+9)
+    return
+    ;;
+*)
+    err "无效选项"; sleep 1
+    ;;
 esac
 done
 }
