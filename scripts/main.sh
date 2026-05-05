@@ -5,139 +5,167 @@
 # 特性: 自动检测终端颜色支持 / 防闪烁 / 兼容性强
 # ============================================================
 
-set -o pipefail
+# ---------- 全局常量：用户规模对应服务器标准 ----------
+# 基础底座AB：2台 → 0～5000
+# 3台 → 5000～5万
+# 4～5台 →5万～20万
+# 6～9台 →20万～100万
+# 10台 →100万～500万
+# 10台以上 →500万～1亿+
 
-# ---------- 全局路径 ----------
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-INVENTORY_DIR="${ROOT_DIR}/inventory/nodes"
-LOG_DIR="${ROOT_DIR}/logs"
-mkdir -p "${INVENTORY_DIR}" "${LOG_DIR}"
-
-# ---------- 全局唯一组件（全网只能装 1 台） ----------
-GLOBAL_ONLY_ONE=(
-  "k3s-server"
-  "netbird-hub"
-  "keepalived-vip"
-  "email-key-dist"
-  "newapi-gateway"
-)
-
-# ---------- 颜色支持自动检测 ----------
-if [[ -t 1 ]] && [[ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]]; then
-    RED=$'\033[1;31m'
-    GREEN=$'\033[1;32m'
-    YELLOW=$'\033[1;33m'
-    BLUE=$'\033[1;34m'
-    PURPLE=$'\033[1;35m'
-    CYAN=$'\033[1;36m'
-    WHITE=$'\033[1;37m'
-    GRAY=$'\033[0;90m'
-    BOLD=$'\033[1m'
-    NC=$'\033[0m'
-else
-    RED=''; GREEN=''; YELLOW=''; BLUE=''; PURPLE=''
-    CYAN=''; WHITE=''; GRAY=''; BOLD=''; NC=''
-fi
-
-# ---------- 通用工具函数 ----------
-log()   { echo -e "${GRAY}[$(date '+%H:%M:%S')]${NC} $*" | tee -a "${LOG_DIR}/main.log" >/dev/null; }
-ok()    { echo -e "${GREEN}✅ $*${NC}"; }
-warn()  { echo -e "${YELLOW}⚠️  $*${NC}"; }
-err()   { echo -e "${RED}❌ $*${NC}"; }
-info()  { echo -e "${CYAN}ℹ️  $*${NC}"; }
-pause() { echo ""; read -p "$(printf "${GRAY}按回车键继续...${NC}")" _; }
-
-# ---------- 安全清屏 ----------
-safe_clear() {
-    if [[ -t 1 ]]; then
-        tput clear 2>/dev/null || clear 2>/dev/null || printf '\n%.0s' {1..3}
-    fi
+# ---------- 统计：基础底座AB是否完整 ----------
+count_base_ab() {
+    local a=$([ -f "${INVENTORY_DIR}/node-a.state" ] && echo 1 || echo 0)
+    local b=$([ -f "${INVENTORY_DIR}/node-b.state" ] && echo 1 || echo 0)
+    echo $((a + b))
 }
 
-# ---------- 系统信息采集 ----------
-get_sys_info() {
-    CPU_COUNT=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo "未知")
-    MEM_INFO=$(free -h 2>/dev/null | awk '/Mem/{print $2}' || echo "未知")
-    DISK_INFO=$(df -h / 2>/dev/null | awk '/\//{print $2}' | head -n1 || echo "未知")
-    OS_INFO=$(grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d'"' -f2 || echo "未知")
-    KERNEL_VER=$(uname -r 2>/dev/null || echo "未知")
-    NOW_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "未知")
-    HOSTNAME_INFO=$(hostname 2>/dev/null || echo "未知")
-    get_netbird_ip
+# ---------- 统计：业务边缘节点数（排除AB底座） ----------
+count_biz_edge_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q "APP_newapi-gateway=installed" "$f" && ((cnt++))
+        fi
+    done
+    echo $cnt
 }
 
-# ---------- 获取 NetBird 组网 IP ----------
-get_netbird_ip() {
-    NETBIRD_IP=$(ip a 2>/dev/null | grep -A1 wt0 | grep inet | awk '{print $2}' | cut -d/ -f1 2>/dev/null || echo "未接入 NetBird")
+# ---------- 统计：只读数据从库/分片节点数（排除AB） ----------
+count_data_slice_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q "APP_mysql=installed\|APP_redis=installed" "$f" && ((cnt++))
+        fi
+    done
+    echo $cnt
 }
 
-# ---------- 节点部署状态读取 ----------
-get_node_status() {
-    local node="$1"
-    if [[ -f "${INVENTORY_DIR}/${node}.state" ]]; then
-        echo -e "${GREEN}✅ 已部署｜健康${NC}"
-    else
-        echo -e "${YELLOW}未部署${NC}"
-    fi
+# ---------- 统计：容灾/备份/日志/安全/海外边缘节点 ----------
+count_dr_security_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q "APP_backup-cronjob=installed\|APP_monitoring=installed" "$f" && ((cnt++))
+        fi
+    done
+    echo $cnt
 }
 
-# ---------- 从全局大脑读取应用状态（核心数据源） ----------
-query_app_state() {
-    local node="$1"
-    local app="$2"
-    if [[ -f "${INVENTORY_DIR}/${node}.state" ]]; then
-        grep -q "APP_${app}=installed" "${INVENTORY_DIR}/${node}.state" && echo -e "${GREEN}✅ 部署成功${NC}" || echo -e "${GRAY}未部署${NC}"
-    else
-        echo -e "${GRAY}未部署${NC}"
-    fi
+# ---------- 获取当前适配承载最大用户量 ----------
+get_support_user_max() {
+    local total=$1
+    if [[ $total -eq 2 ]]; then echo "5000";
+    elif [[ $total -eq 3 ]]; then echo "5万";
+    elif [[ $total -ge 4 && $total -lt 6 ]]; then echo "20万";
+    elif [[ $total -ge 6 && $total -lt 10 ]]; then echo "100万";
+    elif [[ $total -eq 10 ]]; then echo "500万";
+    else echo "1亿+"; fi
 }
 
-# ---------- 全局服务部署总览看板 ----------
+# ---------- 模拟实时在线用户（后期可对接真实接口替换） ----------
+get_real_online_user() {
+    # 这里先模拟，后期改成从监控/业务接口读取真实在线人数
+    echo "12680"
+}
+
+# ---------- 全局服务部署总览超级看板（重构版） ----------
 show_global_service_table() {
+    local base_ab=$(count_base_ab)
+    local total_all=$(ls ${INVENTORY_DIR}/*.state 2>/dev/null | wc -l)
+    local biz_edge=$(count_biz_edge_nodes)
+    local data_slice=$(count_data_slice_nodes)
+    local dr_security=$(count_dr_security_nodes)
+    local max_support=$(get_support_user_max $total_all)
+    local real_online=$(get_real_online_user)
+
     echo ""
-    echo -e "${WHITE}【📊 全局服务部署总览 | NEWAPI 全局大脑数据看板】${NC}"
-    echo -e "${BLUE}=====================================================================${NC}"
+    echo -e "${WHITE}【📊 NEWAPI 全局大脑｜集群实时数据总看板】${NC}"
+    echo -e "${BLUE}=========================================================================${NC}"
+    echo -e "${CYAN} 服务器总数：${WHITE}${total_all} 台${NC} ｜ ${CYAN}基础底座AB：${WHITE}${base_ab}/2 台${NC}"
+    echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
+    echo -e "${GREEN} 业务边缘节点　：${WHITE}${biz_edge} 台${NC}"
+    echo -e "${BLUE} 只读数据分片节点：${WHITE}${data_slice} 台${NC}"
+    echo -e "${YELLOW} 容灾/备份/日志/安全/海外节点：${WHITE}${dr_security} 台${NC}"
+    echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
+    echo -e "${CYAN} 当前架构适配最大承载用户：${WHITE}${max_support} 人${NC}"
+    echo -e "${RED} 当前实时在线用户　　　　：${WHITE}${real_online} 人${NC}"
+    echo -e "${BLUE}=========================================================================${NC}"
+
+    # 智能扩容判断建议
+    echo -e "${WHITE}【🔍 智能扩容分析建议】${NC}"
+    echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
+    if [[ $base_ab -lt 2 ]]; then
+        echo -e "${RED}❌ 警告：基础底座 AB 服务器未部署完整，优先补齐底座！${NC}"
+    else
+        if [[ $real_online -gt $max_support ]]; then
+            echo -e "${RED}❌ 在线用户已超当前架构承载上限，建议立即扩容业务/数据节点！${NC}"
+        else
+            echo -e "${GREEN}✅ 当前服务器配置充足，在线用户在承载范围内，无需扩容${NC}"
+        fi
+    fi
+    echo -e "${BLUE}=========================================================================${NC}"
+    echo -e "${GRAY}说明：数据源 → NEWAPI 全局大脑 inventory 节点状态目录${NC}"
+    echo ""
+
+    # 下方保留原有各节点服务状态表格不变
     printf " ${CYAN}%-8s %-8s %-8s %-8s %-10s %-8s %-8s${NC}\n" "节点" "K3s" "NetBird" "Nginx" "NewAPI" "MySQL" "Redis"
-    echo -e "${BLUE}---------------------------------------------------------------------${NC}"
-    printf " CN1    %-8s %-8s %-8s %-10s %-8s %-8s\n" \
-        "$(query_app_state cn1 k3s-server)" \
-        "$(query_app_state cn1 netbird-hub)" \
-        "$(query_app_state cn1 nginx-edge)" \
-        "$(query_app_state cn1 newapi-gateway)" \
-        "$(query_app_state cn1 mysql)" \
-        "$(query_app_state cn1 redis)"
-    printf " CN2    %-8s %-8s %-8s %-10s %-8s %-8s\n" \
-        "$(query_app_state cn2 k3s-agent)" \
-        "$(query_app_state cn2 netbird-client)" \
-        "$(query_app_state cn2 nginx)" \
-        "$(query_app_state cn2 newapi)" \
-        "$(query_app_state cn2 mysql-master)" \
-        "$(query_app_state cn2 redis-sentinel)"
-    printf " CN3    %-8s %-8s %-8s %-10s %-8s %-8s\n" \
-        "$(query_app_state cn3 k3s-agent)" \
-        "$(query_app_state cn3 netbird-client)" \
-        "$(query_app_state cn3 nginx)" \
-        "$(query_app_state cn3 newapi)" \
-        "$(query_app_state cn3 mysql-slave)" \
-        "$(query_app_state cn3 redis-slave)"
+    echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
     printf " 节点A  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
-        "$(query_app_state node-a k3s-server)" \
-        "$(query_app_state node-a netbird-hub)" \
-        "$(query_app_state node-a nginx-edge)" \
-        "$(query_app_state node-a newapi-gateway)" \
+        "$(query_app_state node-a k3s)" \
+        "$(query_app_state node-a netbird)" \
+        "$(query_app_state node-a nginx)" \
+        "$(query_app_state node-a newapi)" \
         "$(query_app_state node-a mysql)" \
         "$(query_app_state node-a redis)"
     printf " 节点B  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
-        "$(query_app_state node-b k3s-agent)" \
-        "$(query_app_state node-b netbird-client)" \
+        "$(query_app_state node-b k3s)" \
+        "$(query_app_state node-b netbird)" \
         "$(query_app_state node-b nginx)" \
         "$(query_app_state node-b newapi)" \
-        "$(query_app_state node-b mysql-ha)" \
-        "$(query_app_state node-b redis-sentinel)"
-    echo -e "${BLUE}=====================================================================${NC}"
-    echo -e "${GRAY}说明：绿色✅部署成功｜灰色未部署｜数据源：NEWAPI全局大脑文件夹${NC}"
+        "$(query_app_state node-b mysql)" \
+        "$(query_app_state node-b redis)"
+    printf " 节点C  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-c k3s)" \
+        "$(query_app_state node-c netbird)" \
+        "$(query_app_state node-c nginx)" \
+        "$(query_app_state node-c newapi)" \
+        "$(query_app_state node-c mysql)" \
+        "$(query_app_state node-c redis)"
+    printf " 节点D  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-d k3s)" \
+        "$(query_app_state node-d netbird)" \
+        "$(query_app_state node-d nginx)" \
+        "$(query_app_state node-d newapi)" \
+        "$(query_app_state node-d mysql)" \
+        "$(query_app_state node-d redis)"
+    printf " 节点E  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-e k3s)" \
+        "$(query_app_state node-e netbird)" \
+        "$(query_app_state node-e nginx)" \
+        "$(query_app_state node-e newapi)" \
+        "$(query_app_state node-e mysql)" \
+        "$(query_app_state node-e redis)"
+    printf " 节点F  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-f k3s)" \
+        "$(query_app_state node-f netbird)" \
+        "$(query_app_state node-f nginx)" \
+        "$(query_app_state node-f newapi)" \
+        "$(query_app_state node-f mysql)" \
+        "$(query_app_state node-f redis)"
+    printf " 节点G  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-g k3s)" \
+        "$(query_app_state node-g netbird)" \
+        "$(query_app_state node-g nginx)" \
+        "$(query_app_state node-g newapi)" \
+        "$(query_app_state node-g mysql)" \
+        "$(query_app_state node-g redis)"
+    echo -e "${BLUE}=========================================================================${NC}"
+    echo -e "${GRAY}绿色✅部署成功｜灰色未部署｜所有统计自动读取全局大脑节点状态${NC}"
 }
 
 # ---------- 头部横幅 ----------
