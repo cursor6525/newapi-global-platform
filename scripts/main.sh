@@ -13,74 +13,69 @@
 # 10台 →100万～500万
 # 10台以上 →500万～1亿+
 
-# ---------- 统计：基础底座AB是否完整 ----------
-count_base_ab() {
-    local a=$([ -f "${INVENTORY_DIR}/node-a.state" ] && echo 1 || echo 0)
-    local b=$([ -f "${INVENTORY_DIR}/node-b.state" ] && echo 1 || echo 0)
-    echo $((a + b))
-}
-
-# ---------- 统计：业务边缘节点数（排除AB底座） ----------
-count_biz_edge_nodes() {
-    local cnt=0
-    for f in ${INVENTORY_DIR}/*.state; do
-        local node=$(basename "$f" .state)
-        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
-            grep -q "APP_newapi-gateway=installed" "$f" && ((cnt++))
-        fi
-    done
-    echo $cnt
-}
-
-# ---------- 统计：只读数据从库/分片节点数（排除AB） ----------
-count_data_slice_nodes() {
-    local cnt=0
-    for f in ${INVENTORY_DIR}/*.state; do
-        local node=$(basename "$f" .state)
-        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
-            grep -q "APP_mysql=installed\|APP_redis=installed" "$f" && ((cnt++))
-        fi
-    done
-    echo $cnt
-}
-
-# ---------- 统计：容灾/备份/日志/安全/海外边缘节点 ----------
-count_dr_security_nodes() {
-    local cnt=0
-    for f in ${INVENTORY_DIR}/*.state; do
-        local node=$(basename "$f" .state)
-        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
-            grep -q "APP_backup-cronjob=installed\|APP_monitoring=installed" "$f" && ((cnt++))
-        fi
-    done
-    echo $cnt
-}
-
-# ---------- 获取当前适配承载最大用户量 ----------
+# ---------- 动态计算：当前架构【最大可承载用户量】（真实动态，未部署=未部署）
 get_support_user_max() {
-    local total=$1
-    if [[ $total -eq 2 ]]; then echo "5000";
-    elif [[ $total -eq 3 ]]; then echo "5万";
-    elif [[ $total -ge 4 && $total -lt 6 ]]; then echo "20万";
-    elif [[ $total -ge 6 && $total -lt 10 ]]; then echo "100万";
-    elif [[ $total -eq 10 ]]; then echo "500万";
-    else echo "1亿+"; fi
+    local total_all=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
+    local base_ab=$(count_base_ab)
+
+    # 1. 完全没部署任何服务器
+    if [[ $total_all -eq 0 ]]; then
+        echo "未部署"
+        return
+    fi
+
+    # 2. 底座AB不完整
+    if [[ $base_ab -lt 2 ]]; then
+        echo "底座未完整（需A+B）"
+        return
+    fi
+
+    # 3. 底座完整，按服务器总数分档匹配用户量
+    if [[ $total_all -eq 2 ]]; then
+        echo "0～5000"
+    elif [[ $total_all -eq 3 ]]; then
+        echo "5000～5万"
+    elif [[ $total_all -ge 4 && $total_all -le 5 ]]; then
+        echo "5万～20万"
+    elif [[ $total_all -ge 6 && $total_all -le 9 ]]; then
+        echo "20万～100万"
+    elif [[ $total_all -eq 10 ]]; then
+        echo "100万～500万"
+    elif [[ $total_all -ge 11 && $total_all -le 20 ]]; then
+        echo "500万～2000万"
+    elif [[ $total_all -ge 21 && $total_all -le 40 ]]; then
+        echo "2000万～5000万"
+    else
+        echo "5000万～1亿+"
+    fi
 }
 
-# ---------- 模拟实时在线用户（后期可对接真实接口替换） ----------
+# ---------- 动态获取：实时在线用户（未部署=0）
 get_real_online_user() {
-    # 这里先模拟，后期改成从监控/业务接口读取真实在线人数
-    echo "12680"
+    # 先检查是否部署了NewAPI网关
+    if [ ! -f "${INVENTORY_DIR}/node-a.state" ] || \
+       ! grep -q "APP_newapi-gateway=installed" "${INVENTORY_DIR}/node-a.state"; then
+        echo "0"
+        return
+    fi
+
+    # 已部署，尝试从接口拉取数据（后期可改成你的真实监控接口）
+    local online=$(curl -s --connect-timeout 1 "http://127.0.0.1:3000/api/v1/online" 2>/dev/null | jq -r .online 2>/dev/null)
+    if [[ -z "$online" || "$online" == "null" ]]; then
+        echo "0"
+    else
+        echo "$online"
+    fi
 }
 
-# ---------- 全局服务部署总览超级看板（重构版） ----------
+# ---------- 全局服务部署总览超级看板（最终修复版）
 show_global_service_table() {
     local base_ab=$(count_base_ab)
-    local total_all=$(ls ${INVENTORY_DIR}/*.state 2>/dev/null | wc -l)
+    local total_all=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
     local biz_edge=$(count_biz_edge_nodes)
     local data_slice=$(count_data_slice_nodes)
     local dr_security=$(count_dr_security_nodes)
-    local max_support=$(get_support_user_max $total_all)
+    local max_support=$(get_support_user_max)
     local real_online=$(get_real_online_user)
 
     echo ""
@@ -99,10 +94,12 @@ show_global_service_table() {
     # 智能扩容判断建议
     echo -e "${WHITE}【🔍 智能扩容分析建议】${NC}"
     echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
-    if [[ $base_ab -lt 2 ]]; then
-        echo -e "${RED}❌ 警告：基础底座 AB 服务器未部署完整，优先补齐底座！${NC}"
+    if [[ $total_all -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  请先部署基础底座A+B服务器${NC}"
+    elif [[ $base_ab -lt 2 ]]; then
+        echo -e "${RED}❌ 警告：基础底座AB服务器未部署完整，优先补齐底座！${NC}"
     else
-        if [[ $real_online -gt $max_support ]]; then
+        if [[ "$max_support" != "底座未完整（需A+B）" && "$max_support" != "未部署" && $real_online -gt $max_support ]]; then
             echo -e "${RED}❌ 在线用户已超当前架构承载上限，建议立即扩容业务/数据节点！${NC}"
         else
             echo -e "${GREEN}✅ 当前服务器配置充足，在线用户在承载范围内，无需扩容${NC}"
