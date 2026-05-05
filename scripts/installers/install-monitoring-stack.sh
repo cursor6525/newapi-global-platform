@@ -1,12 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 echo "====================================="
-echo "📊 安装监控系统 (Node Exporter)"
+echo "📊 安装节点监控（双兼容）"
 echo "====================================="
 
-if ! command -v docker &> /dev/null; then
+if ! command -v docker &>/dev/null; then
   curl -fsSL https://get.docker.com | bash
-  systemctl enable --now docker
 fi
 
 docker pull prom/node-exporter:latest
