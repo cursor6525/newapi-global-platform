@@ -106,6 +106,8 @@ show_global_service_table() {
         fi
     fi
     echo -e "${BLUE}=========================================================================${NC}"
+    echo -e "${GRAY}说明：数据源 → NEWAPI 全局大脑 inventory 节点状态目录${NC}"
+    echo ""  
    
 # ---------- 头部横幅 ----------
 show_header() {
