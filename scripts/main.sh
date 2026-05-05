@@ -85,24 +85,61 @@ query_app_state() {
     fi
 }
 
-# ---------- 动态计算：当前架构【最大可承载用户量】（真实动态，未部署=未部署）
+# ========== 🔥 缺失的核心统计函数（已补上） ==========
+count_base_ab() {
+    local a=$([ -f "${INVENTORY_DIR}/node-a.state" ] && echo 1 || echo 0)
+    local b=$([ -f "${INVENTORY_DIR}/node-b.state" ] && echo 1 || echo 0)
+    echo $((a + b))
+}
+
+count_biz_edge_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state 2>/dev/null; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q "APP_newapi-gateway=installed" "$f" 2>/dev/null && ((cnt++))
+        fi
+    done
+    echo $cnt
+}
+
+count_data_slice_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state 2>/dev/null; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q -E "APP_mysql|APP_redis" "$f" 2>/dev/null && ((cnt++))
+        fi
+    done
+    echo $cnt
+}
+
+count_dr_security_nodes() {
+    local cnt=0
+    for f in ${INVENTORY_DIR}/*.state 2>/dev/null; do
+        local node=$(basename "$f" .state)
+        if [[ "$node" != "node-a" && "$node" != "node-b" ]]; then
+            grep -q -E "APP_backup|APP_monitoring" "$f" 2>/dev/null && ((cnt++))
+        fi
+    done
+    echo $cnt
+}
+
+# ---------- 动态计算：当前架构【最大可承载用户量】（真实动态） ----------
 get_support_user_max() {
     local total_all=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
     local base_ab=$(count_base_ab)
 
-    # 1. 完全没部署任何服务器
     if [[ $total_all -eq 0 ]]; then
         echo "未部署"
         return
     fi
 
-    # 2. 底座AB不完整
     if [[ $base_ab -lt 2 ]]; then
         echo "底座未完整（需A+B）"
         return
     fi
 
-    # 3. 底座完整，按服务器总数分档匹配用户量
     if [[ $total_all -eq 2 ]]; then
         echo "0～5000"
     elif [[ $total_all -eq 3 ]]; then
@@ -122,16 +159,14 @@ get_support_user_max() {
     fi
 }
 
-# ---------- 动态获取：实时在线用户（未部署=0）
+# ---------- 动态获取：实时在线用户（未部署=0） ----------
 get_real_online_user() {
-    # 先检查是否部署了NewAPI网关
     if [ ! -f "${INVENTORY_DIR}/node-a.state" ] || \
-       ! grep -q "APP_newapi-gateway=installed" "${INVENTORY_DIR}/node-a.state"; then
+       ! grep -q "APP_newapi-gateway=installed" "${INVENTORY_DIR}/node-a.state" 2>/dev/null; then
         echo "0"
         return
     fi
 
-    # 已部署，尝试从接口拉取数据（后期可改成你的真实监控接口）
     local online=$(curl -s --connect-timeout 1 "http://127.0.0.1:3000/api/v1/online" 2>/dev/null | jq -r .online 2>/dev/null)
     if [[ -z "$online" || "$online" == "null" ]]; then
         echo "0"
@@ -140,7 +175,7 @@ get_real_online_user() {
     fi
 }
 
-# ---------- 全局服务部署总览超级看板（最终修复版）
+# ---------- 📊 全局大脑超级看板（唯一版，无重复，无错误） ----------
 show_global_service_table() {
     local base_ab=$(count_base_ab)
     local total_all=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
@@ -155,37 +190,32 @@ show_global_service_table() {
     echo -e "${BLUE}=========================================================================${NC}"
     echo -e "${CYAN} 服务器总数：${WHITE}${total_all} 台${NC} ｜ ${CYAN}基础底座AB：${WHITE}${base_ab}/2 台${NC}"
     echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
-    echo -e "${GREEN} 业务边缘节点　：${WHITE}${biz_edge} 台${NC}"
-    echo -e "${BLUE} 只读数据分片节点：${WHITE}${data_slice} 台${NC}"
-    echo -e "${YELLOW} 容灾/备份/日志/安全/海外节点：${WHITE}${dr_security} 台${NC}"
+    echo -e "${GREEN} 业务边缘节点        ：${WHITE}${biz_edge} 台${NC}"
+    echo -e "${BLUE} 只读数据分片节点    ：${WHITE}${data_slice} 台${NC}"
+    echo -e "${YELLOW} 容灾/备份/日志/安全：${WHITE}${dr_security} 台${NC}"
     echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
     echo -e "${CYAN} 当前架构适配最大承载用户：${WHITE}${max_support} 人${NC}"
-    echo -e "${RED} 当前实时在线用户　　　　：${WHITE}${real_online} 人${NC}"
+    echo -e "${RED} 当前实时在线用户        ：${WHITE}${real_online} 人${NC}"
     echo -e "${BLUE}=========================================================================${NC}"
 
-    # 智能扩容判断建议
     echo -e "${WHITE}【🔍 智能扩容分析建议】${NC}"
     echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
     if [[ $total_all -eq 0 ]]; then
         echo -e "${YELLOW}⚠️  请先部署基础底座A+B服务器${NC}"
     elif [[ $base_ab -lt 2 ]]; then
-        echo -e "${RED}❌ 警告：基础底座AB服务器未部署完整，优先补齐底座！${NC}"
+        echo -e "${RED}❌ 基础底座AB未完整，优先补齐！${NC}"
     else
-        if [[ "$max_support" != "底座未完整（需A+B）" && "$max_support" != "未部署" && $real_online -gt $max_support ]]; then
-            echo -e "${RED}❌ 在线用户已超当前架构承载上限，建议立即扩容业务/数据节点！${NC}"
+        if [[ "$max_support" != "未部署" && "$max_support" != "底座未完整（需A+B）" && $real_online -gt ${max_support//[^0-9]/} ]]; then
+            echo -e "${RED}❌ 在线用户超承载上限，请扩容！${NC}"
         else
-            echo -e "${GREEN}✅ 当前服务器配置充足，在线用户在承载范围内，无需扩容${NC}"
+            echo -e "${GREEN}✅ 配置充足，无需扩容${NC}"
         fi
     fi
     echo -e "${BLUE}=========================================================================${NC}"
-    echo -e "${GRAY}说明：数据源 → NEWAPI 全局大脑 inventory 节点状态目录${NC}"
+    echo -e "${GRAY}数据源：NEWAPI全局大脑文件夹${NC}"
     echo ""
 
-# ---------- 全局服务部署总览看板 ----------
-show_global_service_table() {
-    echo ""
-    echo -e "${WHITE}【📊 全局服务部署总览 | NEWAPI 全局大脑数据看板】${NC}"
-    echo -e "${BLUE}=====================================================================${NC}"
+    # 节点状态表格
     printf " ${CYAN}%-8s %-8s %-8s %-8s %-10s %-8s %-8s${NC}\n" "节点" "K3s" "NetBird" "Nginx" "NewAPI" "MySQL" "Redis"
     echo -e "${BLUE}---------------------------------------------------------------------${NC}"
     printf " 节点A  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
@@ -238,7 +268,7 @@ show_global_service_table() {
         "$(query_app_state node-g mysql)" \
         "$(query_app_state node-g redis)"
     echo -e "${BLUE}=====================================================================${NC}"
-    echo -e "${GRAY}说明：绿色✅部署成功｜灰色未部署｜数据源：NEWAPI全局大脑文件夹${NC}"
+    echo -e "${GRAY}绿色✅部署成功｜灰色未部署${NC}"
 }
 
 # ---------- 头部横幅 ----------
