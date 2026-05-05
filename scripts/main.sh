@@ -212,55 +212,7 @@ show_global_service_table() {
     echo -e "${GRAY}数据源：NEWAPI全局大脑文件夹${NC}"
     echo ""
 
-# ---------- 头部横幅 ----------
-show_header() {
-echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
-echo -e "${BLUE}║${NC}     ${GRAY}部署｜运维｜监控｜扩容｜集群化资产清单${NC}              ${BLUE}║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
-}
-
-# ============================================================
-# 主菜单入口（已按你要求完全替换）
-# ============================================================
-show_main_menu() {
-while true; do
-safe_clear
-show_header
-get_sys_info
-echo ""
-show_global_service_table
-echo ""
-echo -e "${WHITE}【主菜单 · 全生命周期管理】${NC}"
-echo -e "${BLUE}============================================================${NC}"
-echo -e " ${GREEN}1)${NC} 🚀 架构部署与初始化    ${GRAY}单机 / 单区域基础块 / 全球化高可用${NC}"
-echo -e " ${GREEN}2)${NC} 📦 集群化资产清单      ${GRAY}节点｜角色｜区域｜服务状态总览${NC}"
-echo -e " ${GREEN}3)${NC} 🩺 全域监控与健康巡检  ${GRAY}节点连通性｜指标｜日志｜告警${NC}"
-echo -e " ${GREEN}4)${NC} 🔧 日常运维工具箱      ${GRAY}安装｜启停｜配置｜备份｜恢复${NC}"
-echo -e " ${GREEN}5)${NC} ⬆️  集群弹性扩容管理    ${GRAY}单机升单区｜单区升全球｜新增节点${NC}"
-echo -e " ${GREEN}6)${NC} 🛡️  应急灾备与故障切换  ${GRAY}断网切换｜主从切换｜快照恢复${NC}"
-echo -e " ${GREEN}7)${NC} 📖 架构文档与帮助手册  ${GRAY}部署规范｜角色说明｜排错指南${NC}"
-echo -e " ${RED}0)${NC} 🚪 退出总控台"
-echo -e "${BLUE}============================================================${NC}"
-echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
-echo ""
-read -p "$(printf "${CYAN}请输入选项序号：${NC} ")" MAIN_OPT
-
-case "$MAIN_OPT" in
-    1) show_plan_menu ;;              # 架构部署与初始化
-    2) show_cluster_inventory ;;       # 集群化资产清单
-    3) show_monitor_main ;;            # 全域监控与健康巡检
-    4) show_ops_main ;;                # 日常运维工具箱
-    5) show_scale_main ;;              # 集群弹性扩容管理
-    6) show_disaster_main ;;           # 应急灾备与故障切换
-    7) show_docs_main ;;               # 架构文档与帮助手册
-    0) echo -e "${GREEN}👋 已退出总控台，再见！${NC}"; exit 0 ;;
-    *) err "无效选项，请重新输入"; sleep 1 ;;
-esac
-done
-}
-
- # 节点状态表格
+    # 节点状态表格
     printf " ${CYAN}%-8s %-8s %-8s %-8s %-10s %-8s %-8s${NC}\n" "节点" "K3s" "NetBird" "Nginx" "NewAPI" "MySQL" "Redis"
     echo -e "${BLUE}---------------------------------------------------------------------${NC}"
     printf " 节点1  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
@@ -316,6 +268,53 @@ done
     echo -e "${GRAY}绿色✅部署成功｜灰色未部署${NC}"
 }
 
+# ---------- 头部横幅 ----------
+show_header() {
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}     ${PURPLE}🌐 NewAPI 全球化平台 · 中文交互式总控台${NC}            ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}     ${GRAY}部署｜运维｜监控｜扩容｜集群化资产清单${NC}              ${BLUE}║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
+}
+
+# ============================================================
+# 主菜单入口（已按你要求完全替换）
+# ============================================================
+show_main_menu() {
+while true; do
+safe_clear
+show_header
+get_sys_info
+echo ""
+show_global_service_table
+echo ""
+echo -e "${WHITE}【主菜单 · 全生命周期管理】${NC}"
+echo -e "${BLUE}============================================================${NC}"
+echo -e " ${GREEN}1)${NC} 🚀 架构部署与初始化    ${GRAY}单机 / 单区域基础块 / 全球化高可用${NC}"
+echo -e " ${GREEN}2)${NC} 📦 集群化资产清单      ${GRAY}节点｜角色｜区域｜服务状态总览${NC}"
+echo -e " ${GREEN}3)${NC} 🩺 全域监控与健康巡检  ${GRAY}节点连通性｜指标｜日志｜告警${NC}"
+echo -e " ${GREEN}4)${NC} 🔧 日常运维工具箱      ${GRAY}安装｜启停｜配置｜备份｜恢复${NC}"
+echo -e " ${GREEN}5)${NC} ⬆️  集群弹性扩容管理    ${GRAY}单机升单区｜单区升全球｜新增节点${NC}"
+echo -e " ${GREEN}6)${NC} 🛡️  应急灾备与故障切换  ${GRAY}断网切换｜主从切换｜快照恢复${NC}"
+echo -e " ${GREEN}7)${NC} 📖 架构文档与帮助手册  ${GRAY}部署规范｜角色说明｜排错指南${NC}"
+echo -e " ${RED}0)${NC} 🚪 退出总控台"
+echo -e "${BLUE}============================================================${NC}"
+echo -e "${GRAY}本机：${HOSTNAME_INFO} | IP：${LOCAL_IP} | NetBird：${NETBIRD_IP} | ${OS_INFO} | ${NOW_TIME}${NC}"
+echo ""
+read -p "$(printf "${CYAN}请输入选项序号：${NC} ")" MAIN_OPT
+
+case "$MAIN_OPT" in
+    1) show_plan_menu ;;              # 架构部署与初始化
+    2) show_cluster_inventory ;;       # 集群化资产清单
+    3) show_monitor_main ;;            # 全域监控与健康巡检
+    4) show_ops_main ;;                # 日常运维工具箱
+    5) show_scale_main ;;              # 集群弹性扩容管理
+    6) show_disaster_main ;;           # 应急灾备与故障切换
+    7) show_docs_main ;;               # 架构文档与帮助手册
+    0) echo -e "${GREEN}👋 已退出总控台，再见！${NC}"; exit 0 ;;
+    *) err "无效选项，请重新输入"; sleep 1 ;;
+esac
+done
+}
 
 # ============================================================
 # 1.架构部署与初始化
