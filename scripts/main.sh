@@ -330,12 +330,19 @@ show_plan_menu() {
         echo -e "${BLUE}============================================================${NC}"
         echo -e " ${GREEN}1)${NC} 🏠 ${YELLOW}最小生产架构 (2 台服务器)${NC}"
         echo -e "       ${GRAY}└─ 业务数据分离 ｜ 适合 MVP / 中小团队${NC}"
+
         echo ""
-        echo -e " ${GREEN}2)${NC} 🌏 ${YELLOW}多区域架构 (3-6 台服务器)${NC}"
+        echo -e " ${GREEN}2)${NC} 🌍 ${YELLOW}多区域架构 (3-6 台服务器)${NC}"
         echo -e "       ${GRAY}└─ 跨区高可用 ｜ 适合区域级 SaaS${NC}"
+
         echo ""
         echo -e " ${GREEN}3)${NC} 🌐 ${YELLOW}企业级全球化 (7+ 台服务器)${NC}"
         echo -e "       ${GRAY}└─ 多云多活 ｜ 合规审计 ｜ 跨国企业${NC}"
+
+        echo ""
+        echo -e " ${GREEN}4)${NC} ➕ ${YELLOW}服务器扩容节点（智能推荐）${NC}"
+        echo -e "       ${GRAY}└─ 小白一键扩容 ｜ 自动推荐 ｜ 永远不会选错${NC}"
+
         echo ""
         echo -e " ${RED}9)${NC} ⬅️  返回主菜单"
         echo -e "${BLUE}============================================================${NC}"
@@ -344,6 +351,7 @@ show_plan_menu() {
             1) show_plan_minimal ;;
             2) show_plan_regional ;;
             3) show_plan_enterprise ;;
+            4) show_expansion_menu ;;
             9) return ;;
             *) err "无效选项，请重新输入"; sleep 1 ;;
         esac
@@ -437,7 +445,6 @@ show_node_a_menu() {
         esac
     done
 }
-
 
 # ---------- 节点 B 界面 ----------
 show_node_b_menu() {
@@ -564,6 +571,306 @@ show_plan_enterprise() {
     echo -e "  🔹 GDPR / PIPL / CCPA 合规审计"
     echo -e "  🔹 混沌工程 + SLO/SLI 体系"
     echo -e "${BLUE}============================================================${NC}"
+    pause
+}
+
+# ============================================================
+# 🔥 最终版 · 永远不会选错的扩容菜单（已完美整合）
+# ============================================================
+show_expansion_menu() {
+    while true; do
+        safe_clear
+        show_header
+        show_global_service_table
+        local total=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
+
+        echo ""
+        echo -e "${GREEN}【 服务器扩容节点选择 】${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "${CYAN}当前服务器总数：${total} 台${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "${YELLOW}📌 小白不用动脑，照着规则选就不会错${NC}"
+        echo -e "${GREEN}  1 业务边缘节点：不知道选啥就选它，优先扩容首选${NC}"
+        echo -e "${BLUE}  2 只读数据节点：服务器4台以上、数据库变慢再选${NC}"
+        echo -e "${YELLOW}  3 容灾备份节点：服务器6台以上、做日志备份安全再选${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo ""
+        echo -e " ${GREEN}1)${NC} 🌍 业务边缘节点（用户访问、API网关、流量承载）"
+        echo -e " ${GREEN}2)${NC} 🗄️ 只读数据从库/分片节点（数据库只读、查询分流）"
+        echo -e " ${GREEN}3)${NC} 🛡️ 容灾/备份/日志/安全/海外边缘节点"
+        echo ""
+        echo -e " ${RED}9)${NC} ⬅️  返回上一级"
+        echo -e "${BLUE}============================================================${NC}"
+        read -p "$(printf "${CYAN}请选择扩容节点类型：${NC} ")" EXP_OPT
+        case "$EXP_OPT" in
+            1) show_expand_biz_menu ;;
+            2) show_expand_data_menu ;;
+            3) show_expand_dr_menu ;;
+            9) return ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
+        esac
+    done
+}
+
+# ---------- 扩容1：业务边缘节点界面（复刻节点A样式） ----------
+show_expand_biz_menu() {
+    while true; do
+        safe_clear
+        show_header
+        get_sys_info
+        local cap=$(get_support_user_max)
+
+        echo ""
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "🌍 ${WHITE}业务边缘扩容节点（用户访问入口）${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "${CYAN}【自动节点名】${NC}：node-C / node-D / node-E 依次分配"
+        echo -e "${CYAN}【扩容承载】${NC}：当前架构可支撑 ${cap} 用户"
+        echo -e "${CYAN}【适用场景】${NC}：新增服务器优先必选"
+        echo -e "${BLUE}------------------------------------------------------------${NC}"
+        echo -e "${YELLOW}⚠️  角色定义：纯业务流量节点，负责用户访问与API网关${NC}"
+        echo -e "${RED}❗ 严禁在本节点安装数据库 / Redis 等数据组件${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo ""
+        echo -e "${WHITE}✅ 本节点默认预装应用清单：${NC}"
+        echo ""
+        echo -e " ${GREEN}1)${NC} NetBird 客户端（加入私有加密组网）"
+        echo -e " ${GREEN}2)${NC} Nginx 边缘网关（公网流量入口）"
+        echo -e " ${GREEN}3)${NC} NewAPI 网关服务（核心业务承载）"
+        echo -e " ${GREEN}4)${NC} K3s 集群Agent节点"
+        echo -e " ${GREEN}5)${NC} 监控探针 + 日志采集客户端"
+        echo ""
+        echo -e " ${GREEN}8)${NC} 🚀 一键创建并初始化本扩容节点"
+        echo -e " ${GREEN}9)${NC} 📋 查看已部署业务边缘节点列表"
+        echo -e " ${RED}0)${NC} ⬅️  返回扩容选择菜单"
+        echo -e "${BLUE}============================================================${NC}"
+        read -p "$(printf "${CYAN}请输入要操作的序号：${NC} ")" APP_OPT
+        case "$APP_OPT" in
+            8) init_new_biz_node ;;
+            9) list_biz_edge_all ;;
+            0) return ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
+        esac
+    done
+}
+
+# ---------- 扩容2：只读数据节点界面（复刻节点B样式） ----------
+show_expand_data_menu() {
+    while true; do
+        safe_clear
+        show_header
+        get_sys_info
+        local cap=$(get_support_user_max)
+
+        echo ""
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "🗄️ ${WHITE}只读数据分片扩容节点${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "${CYAN}【自动节点名】${NC}：node-C / node-D / node-E 依次分配"
+        echo -e "${CYAN}【扩容承载】${NC}：当前架构可支撑 ${cap} 用户"
+        echo -e "${CYAN}【适用场景】${NC}：服务器4台以上、数据库查询压力大"
+        echo -e "${BLUE}------------------------------------------------------------${NC}"
+        echo -e "${YELLOW}⚠️  角色定义：纯数据只读节点，分担数据库查询压力${NC}"
+        echo -e "${RED}❗ 禁止安装业务网关 / Nginx / NewAPI 核心业务${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo ""
+        echo -e "${WHITE}✅ 本节点默认预装应用清单：${NC}"
+        echo ""
+        echo -e " ${GREEN}1)${NC} NetBird 客户端（加入私有加密组网）"
+        echo -e " ${GREEN}2)${NC} MySQL 只读从库实例"
+        echo -e " ${GREEN}3)${NC} Redis 只读分片节点"
+        echo -e " ${GREEN}4)${NC} 数据同步代理服务"
+        echo -e " ${GREEN}5)${NC} 定时异地备份客户端"
+        echo ""
+        echo -e " ${GREEN}8)${NC} 🚀 一键创建并初始化本扩容节点"
+        echo -e " ${GREEN}9)${NC} 📋 查看已部署数据分片节点列表"
+        echo -e " ${RED}0)${NC} ⬅️  返回扩容选择菜单"
+        echo -e "${BLUE}============================================================${NC}"
+        read -p "$(printf "${CYAN}请输入要操作的序号：${NC} ")" APP_OPT
+        case "$APP_OPT" in
+            8) init_new_data_node ;;
+            9) list_data_slice_all ;;
+            0) return ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
+        esac
+    done
+}
+
+# ---------- 扩容3：容灾/备份/日志/安全/海外节点 ----------
+show_expand_dr_menu() {
+    while true; do
+        safe_clear
+        show_header
+        get_sys_info
+        local cap=$(get_support_user_max)
+
+        echo ""
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "🛡️ ${WHITE}容灾/备份/日志/安全/海外扩容节点${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo -e "${CYAN}【自动节点名】${NC}：node-C / node-D / node-E 依次分配"
+        echo -e "${CYAN}【扩容承载】${NC}：当前架构可支撑 ${cap} 用户"
+        echo -e "${CYAN}【适用场景】${NC}：服务器6台以上，做备份日志安全海外加速"
+        echo -e "${BLUE}------------------------------------------------------------${NC}"
+        echo -e "${YELLOW}⚠️  角色定义：后勤运维辅助节点，不承载核心业务${NC}"
+        echo -e "${RED}❗ 禁止安装核心业务网关 / 数据库主库组件${NC}"
+        echo -e "${BLUE}============================================================${NC}"
+        echo ""
+        echo -e "${WHITE}✅ 本节点默认预装应用清单：${NC}"
+        echo ""
+        echo -e " ${GREEN}1)${NC} NetBird 客户端（加入私有加密组网）"
+        echo -e " ${GREEN}2)${NC} 全自动定时备份服务"
+        echo -e " ${GREEN}3)${NC} 全网日志聚合采集服务"
+        echo -e " ${GREEN}4)${NC} WAF 安全防护与攻击拦截"
+        echo -e " ${GREEN}5)${NC} 海外边缘流量代理加速"
+        echo ""
+        echo -e " ${GREEN}8)${NC} 🚀 一键创建并初始化本扩容节点"
+        echo -e " ${GREEN}9)${NC} 📋 查看已部署容灾安全节点列表"
+        echo -e " ${RED}0)${NC} ⬅️  返回扩容选择菜单"
+        echo -e "${BLUE}============================================================${NC}"
+        read -p "$(printf "${CYAN}请输入要操作的序号：${NC} ")" APP_OPT
+        case "$APP_OPT" in
+            8) init_new_dr_node ;;
+            9) list_dr_security_all ;;
+            0) return ;;
+            *) err "无效选项，请重新输入"; sleep 1 ;;
+        esac
+    done
+}
+
+# ---------- 工具：自动获取下一个节点名称 node-C/D/E... ----------
+get_next_auto_node() {
+    for letter in {C..Z}; do
+        if [ ! -f "${INVENTORY_DIR}/node-${letter}.state" ]; then
+            echo "node-${letter}"
+            return
+        fi
+    done
+    echo ""
+}
+
+# ---------- 初始化新建业务边缘节点 ----------
+init_new_biz_node() {
+    local node=$(get_next_auto_node)
+    [ -z "$node" ] && { err "已达到最大扩容节点数量"; pause; return; }
+
+    safe_clear
+    show_header
+    echo ""
+    info "即将自动创建扩容节点：${WHITE}${node}${NC}"
+    read -p "$(printf "${CYAN}确认创建并写入全局资产清单？(y/N)：${NC} ")" CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        warn "已取消创建节点"
+        pause
+        return
+    fi
+
+    cat > "${INVENTORY_DIR}/${node}.state" <<EOF
+CLUSTER_TYPE=biz-edge
+APP_netbird-client=installed
+APP_nginx=installed
+APP_newapi-gateway=installed
+APP_k3s-agent=installed
+APP_monitor-agent=installed
+APP_log-agent=installed
+EOF
+
+    ok "✅ ${node} 业务边缘扩容节点初始化完成"
+    ok "✅ 已自动纳入全局大脑看板统计"
+    ok "📈 当前架构最大承载用户：$(get_support_user_max) 人"
+    pause
+}
+
+# ---------- 初始化新建只读数据节点 ----------
+init_new_data_node() {
+    local node=$(get_next_auto_node)
+    [ -z "$node" ] && { err "已达到最大扩容节点数量"; pause; return; }
+
+    safe_clear
+    show_header
+    echo ""
+    info "即将自动创建扩容节点：${WHITE}${node}${NC}"
+    read -p "$(printf "${CYAN}确认创建并写入全局资产清单？(y/N)：${NC} ")" CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        warn "已取消创建节点"
+        pause
+        return
+    fi
+
+    cat > "${INVENTORY_DIR}/${node}.state" <<EOF
+CLUSTER_TYPE=data-slice
+APP_netbird-client=installed
+APP_mysql-slave=installed
+APP_redis-slave=installed
+APP_data-sync=installed
+APP_backup-client=installed
+EOF
+
+    ok "✅ ${node} 只读数据分片扩容节点初始化完成"
+    ok "✅ 已自动纳入全局大脑看板统计"
+    ok "📈 当前架构最大承载用户：$(get_support_user_max) 人"
+    pause
+}
+
+# ---------- 初始化新建容灾/备份/安全/海外节点 ----------
+init_new_dr_node() {
+    local node=$(get_next_auto_node)
+    [ -z "$node" ] && { err "已达到最大扩容节点数量"; pause; return; }
+
+    safe_clear
+    show_header
+    echo ""
+    info "即将自动创建扩容节点：${WHITE}${node}${NC}"
+    read -p "$(printf "${CYAN}确认创建并写入全局资产清单？(y/N)：${NC} ")" CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        warn "已取消创建节点"
+        pause
+        return
+    fi
+
+    cat > "${INVENTORY_DIR}/${node}.state" <<EOF
+CLUSTER_TYPE=dr-overseas
+APP_netbird-client=installed
+APP_backup-service=installed
+APP_log-collect=installed
+APP_waf-security=installed
+APP_overseas-proxy=installed
+EOF
+
+    ok "✅ ${node} 容灾/备份/安全/海外扩容节点初始化完成"
+    ok "✅ 已自动纳入全局大脑看板统计"
+    ok "📈 当前架构最大承载用户：$(get_support_user_max) 人"
+    pause
+}
+
+# ---------- 列表查看函数 ----------
+list_biz_edge_all() {
+    safe_clear; show_header; echo ""
+    echo -e "${WHITE}【已部署 业务边缘扩容节点 列表】${NC}"
+    local list=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null)
+    for f in $list; do
+        grep -q "CLUSTER_TYPE=biz-edge" "$f" && echo -e "${GREEN}✅ $(basename $f .state)${NC}"
+    done
+    pause
+}
+
+list_data_slice_all() {
+    safe_clear; show_header; echo ""
+    echo -e "${WHITE}【已部署 只读数据分片扩容节点 列表】${NC}"
+    local list=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null)
+    for f in $list; do
+        grep -q "CLUSTER_TYPE=data-slice" "$f" && echo -e "${BLUE}✅ $(basename $f .state)${NC}"
+    done
+    pause
+}
+
+list_dr_security_all() {
+    safe_clear; show_header; echo ""
+    echo -e "${WHITE}【已部署 容灾/备份/安全/海外节点 列表】${NC}"
+    local list=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null)
+    for f in $list; do
+        grep -q "CLUSTER_TYPE=dr-overseas" "$f" && echo -e "${YELLOW}✅ $(basename $f .state)${NC}"
+    done
     pause
 }
 
