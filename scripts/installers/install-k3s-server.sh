@@ -1,43 +1,53 @@
 #!/bin/bash
 set -euo pipefail
 echo "====================================="
-echo "🚀 安装 K3s Server（双兼容自动模式）"
+echo "🚀 安装 K3s Server（无 systemd 容器专用版）"
 echo "====================================="
 
-swapoff -a 2>/dev/null
-mkdir -p /var/log
+# 1. 环境准备
+swapoff -a 2>/dev/null || true
+mkdir -p /var/log /etc/rancher/k3s
+rm -f /var/run/k3s/*.pid /var/lib/rancher/k3s/server/lock 2>/dev/null || true
 
-# 自动检测是否有 systemd
-HAS_SYSTEMD=1
-if ! pidof systemd >/dev/null 2>&1; then
-  HAS_SYSTEMD=0
-fi
-
-# 安装 Docker（必备）
+# 2. 安装 Docker（容器必备）
 if ! command -v docker &>/dev/null; then
+  echo "安装 Docker..."
   curl -fsSL https://get.docker.com | bash
 fi
 
-# 安装 K3s
-curl -sfL https://get.k3s.io | sh -s server \
+# 3. 安装 K3s 二进制（不依赖 systemd）
+echo "下载 K3s..."
+curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_ENABLE=true INSTALL_K3S_SKIP_START=true sh -s server \
   --docker \
   --write-kubeconfig-mode 644 \
   --disable traefik \
   --disable local-storage \
   --disable servicelb
 
-# 无 systemd 则手动后台启动
-if [ $HAS_SYSTEMD -eq 0 ]; then
-  nohup k3s server > /var/log/k3s.log 2>&1 &
-  sleep 10
-fi
-
-# 验证
+# 4. 手动后台启动（关键！绕过 systemd）
+echo "启动 K3s 服务..."
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-if kubectl get nodes >/dev/null 2>&1; then
-  echo "✅ K3s 启动成功！"
-else
-  echo "❌ K3s 启动失败"
-  cat /var/log/k3s.log 2>/dev/null
-  exit 1
-fi
+nohup k3s server \
+  --docker \
+  --write-kubeconfig-mode 644 \
+  --disable traefik \
+  --disable local-storage \
+  --disable servicelb \
+  > /var/log/k3s.log 2>&1 &
+
+# 5. 强制等待并验证（解决假成功问题）
+echo "等待服务启动（最长 30 秒）..."
+for i in {1..30}; do
+  if kubectl get nodes --request-timeout=1s >/dev/null 2>&1; then
+    echo "✅ K3s 启动成功！"
+    kubectl get nodes
+    exit 0
+  fi
+  sleep 1
+done
+
+# 超时失败处理
+echo "❌ K3s 启动失败！"
+echo "日志输出："
+cat /var/log/k3s.log
+exit 1
