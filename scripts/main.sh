@@ -5,14 +5,6 @@
 # 特性: 自动检测终端颜色支持 / 防闪烁 / 兼容性强
 # ============================================================
 
-# ---------- 全局常量：用户规模对应服务器标准 ----------
-# 基础底座AB：2台 → 0～5000
-# 3台 → 5000～5万
-# 4～5台 →5万～20万
-# 6～9台 →20万～100万
-# 10台 →100万～500万
-# 10台以上 →500万～1亿+
-
 # ---------- 动态计算：当前架构【最大可承载用户量】（真实动态，未部署=未部署）
 get_support_user_max() {
     local total_all=$(ls ${INVENTORY_DIR}/node-*.state 2>/dev/null | wc -l)
@@ -107,7 +99,63 @@ show_global_service_table() {
     fi
     echo -e "${BLUE}=========================================================================${NC}"
     echo -e "${GRAY}说明：数据源 → NEWAPI 全局大脑 inventory 节点状态目录${NC}"
-    echo ""  
+    echo ""
+
+    # 下方保留原有各节点服务状态表格不变
+    printf " ${CYAN}%-8s %-8s %-8s %-8s %-10s %-8s %-8s${NC}\n" "节点" "K3s" "NetBird" "Nginx" "NewAPI" "MySQL" "Redis"
+    echo -e "${BLUE}-------------------------------------------------------------------------${NC}"
+    printf " 节点A  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-a k3s)" \
+        "$(query_app_state node-a netbird)" \
+        "$(query_app_state node-a nginx)" \
+        "$(query_app_state node-a newapi)" \
+        "$(query_app_state node-a mysql)" \
+        "$(query_app_state node-a redis)"
+    printf " 节点B  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-b k3s)" \
+        "$(query_app_state node-b netbird)" \
+        "$(query_app_state node-b nginx)" \
+        "$(query_app_state node-b newapi)" \
+        "$(query_app_state node-b mysql)" \
+        "$(query_app_state node-b redis)"
+    printf " 节点C  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-c k3s)" \
+        "$(query_app_state node-c netbird)" \
+        "$(query_app_state node-c nginx)" \
+        "$(query_app_state node-c newapi)" \
+        "$(query_app_state node-c mysql)" \
+        "$(query_app_state node-c redis)"
+    printf " 节点D  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-d k3s)" \
+        "$(query_app_state node-d netbird)" \
+        "$(query_app_state node-d nginx)" \
+        "$(query_app_state node-d newapi)" \
+        "$(query_app_state node-d mysql)" \
+        "$(query_app_state node-d redis)"
+    printf " 节点E  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-e k3s)" \
+        "$(query_app_state node-e netbird)" \
+        "$(query_app_state node-e nginx)" \
+        "$(query_app_state node-e newapi)" \
+        "$(query_app_state node-e mysql)" \
+        "$(query_app_state node-e redis)"
+    printf " 节点F  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-f k3s)" \
+        "$(query_app_state node-f netbird)" \
+        "$(query_app_state node-f nginx)" \
+        "$(query_app_state node-f newapi)" \
+        "$(query_app_state node-f mysql)" \
+        "$(query_app_state node-f redis)"
+    printf " 节点G  %-8s %-8s %-8s %-10s %-8s %-8s\n" \
+        "$(query_app_state node-g k3s)" \
+        "$(query_app_state node-g netbird)" \
+        "$(query_app_state node-g nginx)" \
+        "$(query_app_state node-g newapi)" \
+        "$(query_app_state node-g mysql)" \
+        "$(query_app_state node-g redis)"
+    echo -e "${BLUE}=========================================================================${NC}"
+    echo -e "${GRAY}绿色✅部署成功｜灰色未部署｜所有统计自动读取全局大脑节点状态${NC}"
+}
    
 # ---------- 头部横幅 ----------
 show_header() {
