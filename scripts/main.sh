@@ -524,24 +524,23 @@ install_app() {
     if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
         log "开始安装 ${app} (${node})"
 
-        # ======================
-        # 🔥 模块化调用（核心改动）
-        # ======================
         local script="${SCRIPT_DIR}/installers/install-${app}.sh"
         if [[ -f "${script}" ]]; then
             chmod +x "${script}"
-            bash "${script}" 2>&1 | tee -a "${LOG_DIR}/${app}.log"
+            # 关键：只有脚本 exit 0 成功，才写入状态
+            if bash "${script}" 2>&1 | tee -a "${LOG_DIR}/${app}.log"; then
+                local node_name
+                [[ "$node" == "节点 1" ]] && node_name="node-1"
+                [[ "$node" == "节点 2" ]] && node_name="node-2"
+                echo "APP_${app}=installed" >> "${INVENTORY_DIR}/${node_name}.state"
+                ok "${app} 安装成功 → 已写入全局大脑状态"
+            else
+                err "${app} 安装失败！未写入状态文件"
+            fi
         else
             warn "安装脚本不存在：install-${app}.sh"
             sleep 2
         fi
-
-        # 写入状态
-        local node_name
-        [[ "$node" == "节点 1" ]] && node_name="node-1"
-        [[ "$node" == "节点 2" ]] && node_name="node-2"
-        echo "APP_${app}=installed" >> "${INVENTORY_DIR}/${node_name}.state"
-        ok "${app} 安装流程结束 → 已写入全局大脑状态"
     else
         warn "已取消安装"
     fi
