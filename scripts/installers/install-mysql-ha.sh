@@ -1,12 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 echo "====================================="
-echo "🗄️ 安装 MySQL 高可用实例"
+echo "🗄️ 安装 MySQL 高可用（双兼容）"
 echo "====================================="
 
-if ! command -v docker &> /dev/null; then
+if ! command -v docker &>/dev/null; then
   curl -fsSL https://get.docker.com | bash
-  systemctl enable --now docker
 fi
 
 docker pull mysql:8
