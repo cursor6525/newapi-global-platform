@@ -4,15 +4,18 @@ echo "==============================================="
 echo "  开始安装：邮件密钥分发服务（内网安全版）"
 echo "==============================================="
 
-echo "[+] 安装系统依赖：postfix mailutils openssl"
+echo "[+] 等待 apt 锁释放..."
+while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+  sleep 1
+done
 
-# 🔥 关键：无交互安装，不弹出任何配置窗口
+echo "[+] 安装系统依赖：postfix mailutils openssl"
 export DEBIAN_FRONTEND=noninteractive
 
 apt update -y
 apt install -y -q postfix mailutils openssl
 
-# 自动配置为本地邮件（不对外，安全）
+# 自动配置本地邮件（不弹窗、不交互）
 cat > /etc/postfix/main.cf <<EOF
 smtpd_banner = \$myhostname ESMTP
 biff = no
@@ -31,11 +34,9 @@ inet_interfaces = loopback-only
 inet_protocols = ipv4
 EOF
 
-# 重启生效
 systemctl restart postfix
 sleep 2
 
-# 验证
 if systemctl is-active --quiet postfix; then
   echo "✅ postfix 邮件服务启动成功"
 else
@@ -43,4 +44,4 @@ else
   exit 1
 fi
 
-echo "✅ 邮件服务安装完成（本地安全模式，无外网访问）"
+echo "✅ 邮件服务安装完成（本地安全模式）"
