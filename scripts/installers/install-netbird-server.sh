@@ -1,24 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 echo "====================================="
-echo "🌐 安装 NetBird 服务端（避坑离线版）"
+echo "🚀 安装 K3s Server（腾讯云专用版）"
 echo "====================================="
 
-# 只装依赖，不挂外部镜像
-apt update -y
-apt install -y ca-certificates gnupg2 curl -y
+# 关闭防火墙、关闭交换分区
+ufw disable 2>/dev/null || true
+systemctl stop firewalld 2>/dev/null || true
+swapoff -a
+sed -i '/swap/s/^/#/' /etc/fstab 2>/dev/null
 
-# 官方源直连，不用国内镜像
-curl -fsSL https://pkgs.netbird.io/install.sh | bash -s -- --no-ui
+# 安装 K3s（标准服务器模式）
+curl -sfL https://get.k3s.io | sh -s server \
+  --write-kubeconfig-mode 644 \
+  --disable traefik \
+  --disable servicelb \
+  --disable local-storage
 
-# 后台拉起
-nohup netbird up >/dev/null 2>&1 &
-sleep 4
+# 等待启动
+sleep 10
 
-# 验证网卡 wt0
-if ip link show wt0 2>/dev/null; then
-  echo "✅ NetBird 服务端安装 & 组网网卡就绪"
+# 验证
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+if kubectl get nodes >/dev/null 2>&1; then
+  echo "✅ K3s 安装成功！"
+  kubectl get nodes
 else
-  echo "❌ NetBird 启动后无 wt0 网卡"
+  echo "❌ K3s 启动失败"
   exit 1
 fi
