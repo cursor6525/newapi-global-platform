@@ -1,19 +1,45 @@
-# 直接运行（无需保存文件）—— 自动处理 IP、清理、校验、安装、启动、验证
-export INSTALL_K3S_SKIP_ENABLE=true INSTALL_K3S_SKIP_START=true
-NODE_IP=$(ip -4 route get 1 | awk '{print $7;exit}' 2>/dev/null) && \
-[ -z "$NODE_IP" ] && NODE_IP=$(hostname -I | awk '{print $1}') && \
+cat > /opt/newapi-global-platform/scripts/installers/install-k3s-server.sh << 'EOF'
+#!/bin/bash
+set -euo pipefail
+
+echo "====================================="
+echo "🚀 安装 K3s Server（语法修复版）"
+echo "====================================="
+
+# 1. 自动获取本机IP和主机名
+NODE_IP=$(hostname -I | awk '{print $1}')
+NODE_HOSTNAME=$(hostname)
+
+# 2. 端口检查
+check_port() {
+  local port=$1
+  if ss -tuln | grep -Eq ":$port\s"; then
+    echo "❌ Port $port 已被占用"
+    exit 1
+  fi
+}
+for port in 6443 10250; do
+  check_port $port
+done
+
+# 3. 使用国内镜像安装K3s（无语法错误）
 curl -sfL https://rancher-mirror.rancher.cn/k3s/k3s-install.sh | \
-  INSTALL_K3S_VERSION=v1.31.3+k3s2 \
   INSTALL_K3S_MIRROR=cn \
   INSTALL_K3S_EXEC="server \
-    --disable servicelb,traefik,local-storage,metrics-server \
+    --disable traefik,metrics-server,servicelb,local-storage \
     --tls-san $NODE_IP \
-    --tls-san $(hostname) \
-    --write-kubeconfig-mode 644 \
-    --node-label role.kubernetes.io/control-plane=true \
-    --kube-apiserver-arg=max-requests-inflight=50 \
-    --kube-apiserver-arg=memlock=1" \
-  sh - && \
-k3s server > /var/log/k3s.log 2>&1 & && \
-timeout 120s bash -c 'while ! k3s kubectl get nodes >/dev/null 2>&1; do sleep 5; done && curl -k -f https://'$NODE_IP':6443/healthz >/dev/null 2>&1' && \
-echo -e "\n✅ K3s 控制面部署成功！\n📋 API: https://$NODE_IP:6443\n🔑 kubeconfig: /etc/rancher/k3s/k3s.yaml"
+    --tls-san $NODE_HOSTNAME \
+    --write-kubeconfig-mode 644" \
+  sh -
+
+# 4. 等待就绪
+timeout 120s bash -c '
+  while ! kubectl get nodes >/dev/null 2>&1; do
+    echo "⏳ 等待K3s就绪..."
+    sleep 5
+  done
+'
+
+echo "✅ K3s安装成功！"
+kubectl get nodes
+EOF
